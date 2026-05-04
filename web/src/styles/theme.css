@@ -6,13 +6,13 @@
   --bg-primary: #f5f0e6;
   --bg-secondary: #eee9df;
   --bg-tertiary: #e6e0d5;
-  --border-color: #231f1c; /* dark borders */
-  --border-light: #d8d2c6; /* subtle separators */
+  --border-color: #231f1c;
+  --border-light: #d8d2c6;
   --text-primary: #231f1c;
   --text-secondary: #5a544c;
   --text-muted: #8c8375;
-  --accent-primary: #d54930; /* The terracotta red */
-  --accent-secondary: #356b3e; /* The green */
+  --accent-primary: #d54930;
+  --accent-secondary: #356b3e;
   --status-success: #356b3e;
   --status-error: #d54930;
   --status-warning: #c2883a;
@@ -92,7 +92,13 @@ body {
 }
 
 /* Headings and specific text */
-h1, h2, h3, h4, h5, h6, .bp6-heading {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.bp6-heading {
   font-family: var(--font-mono) !important;
   color: var(--text-primary) !important;
   text-transform: uppercase;
@@ -100,7 +106,8 @@ h1, h2, h3, h4, h5, h6, .bp6-heading {
   font-weight: 400 !important;
 }
 
-.bp6-dialog, .bp6-drawer {
+.bp6-dialog,
+.bp6-drawer {
   background-color: var(--bg-primary) !important;
   border: 1px solid var(--border-color) !important;
   border-radius: 0 !important;
@@ -108,7 +115,8 @@ h1, h2, h3, h4, h5, h6, .bp6-heading {
   color: var(--text-primary) !important;
 }
 
-.bp6-dialog-header, .bp6-drawer-header {
+.bp6-dialog-header,
+.bp6-drawer-header {
   background-color: var(--bg-primary) !important;
   box-shadow: none !important;
   border-bottom: 1px solid var(--border-color) !important;
@@ -120,7 +128,8 @@ h1, h2, h3, h4, h5, h6, .bp6-heading {
   border-top: 1px solid var(--border-color) !important;
 }
 
-.bp6-input, .bp6-html-select select {
+.bp6-input,
+.bp6-html-select select {
   background-color: var(--bg-secondary) !important;
   color: var(--text-primary) !important;
   border: 1px solid var(--border-light) !important;
@@ -129,7 +138,8 @@ h1, h2, h3, h4, h5, h6, .bp6-heading {
   box-shadow: none !important;
 }
 
-.bp6-input:focus, .bp6-html-select select:focus {
+.bp6-input:focus,
+.bp6-html-select select:focus {
   border-color: var(--border-color) !important;
   box-shadow: none !important;
 }
@@ -161,7 +171,7 @@ h1, h2, h3, h4, h5, h6, .bp6-heading {
 }
 
 .bp6-button.bp6-minimal:hover {
-  background-color: rgba(0,0,0,0.05) !important;
+  background-color: rgba(0, 0, 0, 0.05) !important;
 }
 
 .bp6-tag {
@@ -172,12 +182,27 @@ h1, h2, h3, h4, h5, h6, .bp6-heading {
   border: 1px solid var(--border-light) !important;
 }
 
-.bp6-tag.bp6-intent-primary { color: var(--accent-primary) !important; border-color: var(--accent-primary) !important; background: transparent !important; }
-.bp6-tag.bp6-intent-success { color: var(--status-success) !important; border-color: var(--status-success) !important; background: transparent !important; }
-.bp6-tag.bp6-intent-warning { color: var(--status-warning) !important; border-color: var(--status-warning) !important; background: transparent !important; }
+.bp6-tag.bp6-intent-primary {
+  color: var(--accent-primary) !important;
+  border-color: var(--accent-primary) !important;
+  background: transparent !important;
+}
+
+.bp6-tag.bp6-intent-success {
+  color: var(--status-success) !important;
+  border-color: var(--status-success) !important;
+  background: transparent !important;
+}
+
+.bp6-tag.bp6-intent-warning {
+  color: var(--status-warning) !important;
+  border-color: var(--status-warning) !important;
+  background: transparent !important;
+}
 
 /* Sidebar form labels (Sort By, Order, Page Size) — must match Search H6 = font-mono */
-label.bp6-label {
+label.bp6-label,
+.pagination-text {
   font-family: var(--font-mono) !important;
   font-size: 0.75rem !important;
   text-transform: uppercase !important;
