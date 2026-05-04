@@ -1,0 +1,13 @@
+services:
+  parq:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/data:ro
+      - ./schema.json:/schema.json
+    environment:
+      - PARQ_PARQUET=/data/vision_ai.parquet
+      - PARQ_SCHEMA=/schema.json
+      - PARQ_CORS_ORIGINS=*
+    restart: unless-stopped
