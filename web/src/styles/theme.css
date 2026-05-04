@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Space+Mono:wght@400;700&display=swap');
 
 :root {
+  font-size: 18px;
   /* Colors based on dating-web.png */
   --bg-primary: #f5f0e6;
   --bg-secondary: #eee9df;
@@ -78,13 +79,8 @@ body {
 }
 
 /* RowCard styling */
-.bp5-card,
-.bp5-elevation-0,
-.bp5-elevation-1,
-.bp5-elevation-2,
-.bp5-elevation-3,
-.bp5-elevation-4 {
-  background-color: var(--bg-primary) !important;
+.bp5-card {
+  background-color: transparent !important;
   box-shadow: none !important;
   border: 1px solid var(--border-light) !important;
   border-radius: 0 !important;
