@@ -166,7 +166,7 @@ export function RowCard({ row, schema }: { row: Row; schema: Config }) {
                       />
                     ) : (
                       <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', backgroundColor: 'var(--bg-secondary)', padding: '0.5rem', borderRadius: '4px' }}>
-                        <div style={{ color: 'var(--text-secondary)', wordBreak: 'break-all', flex: 1, textAlign: 'left' }}>
+                        <div style={{ color: 'var(--text-secondary)', wordBreak: 'break-all', flex: 1, textAlign: 'left', fontFamily: 'var(--font-serif)' }}>
                           {formatValue(col, row.columns[col.name])}
                         </div>
                         <Button
