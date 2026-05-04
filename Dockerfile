@@ -2,12 +2,12 @@
 FROM node:22-alpine AS frontend
 WORKDIR /src
 COPY web/package.json web/package-lock.json ./
-RUN npm ci
+RUN npm install --no-audit --no-fund
 COPY web/ ./
 RUN npm run build
 
 # ── Stage 2: Build Go binary ──
-FROM golang:1.24-alpine AS backend
+FROM golang:1.25-alpine AS backend
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
