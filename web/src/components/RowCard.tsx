@@ -43,7 +43,7 @@ export function RowCard({ row, schema }: { row: Row; schema: Config }) {
 
   const FieldRow = ({ col, value }: { col: any, value: any }) => (
     <div className="field-row">
-      <b style={{ color: 'var(--nord9)', minWidth: '120px' }}>{col.label}:</b>
+      <b style={{ color: 'var(--accent-secondary)', minWidth: '120px' }}>{col.label}:</b>
       <Button
         icon="clipboard"
         minimal
@@ -61,7 +61,7 @@ export function RowCard({ row, schema }: { row: Row; schema: Config }) {
         interactive
         elevation={Elevation.TWO}
         onClick={() => setIsOpen(true)}
-        style={{ backgroundColor: 'var(--nord2)', color: 'var(--nord6)', padding: '1.25rem', width: '100%' }}
+        style={{ padding: '1.25rem', width: '100%' }}
       >
         <div style={{ display: 'flex', gap: '2rem' }}>
           <div style={{ width: '180px', flexShrink: 0 }}>
@@ -69,7 +69,7 @@ export function RowCard({ row, schema }: { row: Row; schema: Config }) {
           </div>
           <div style={{ flex: 1, overflow: 'hidden', textAlign: 'left' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-              <H5 style={{ color: 'var(--nord8)', margin: 0, textAlign: 'left' }}>Row #{row.index}</H5>
+              <H5 style={{ color: 'var(--accent-primary)', margin: 0, textAlign: 'left' }}>Row #{row.index}</H5>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <Button icon="maximize" minimal small onClick={(e) => { e.stopPropagation(); setIsOpen(true); }} />
                 <Button icon="download" minimal small onClick={(e) => { e.stopPropagation(); window.open(getDownloadUrl(row.index)); }} />
@@ -79,15 +79,15 @@ export function RowCard({ row, schema }: { row: Row; schema: Config }) {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1.25rem', justifyContent: 'flex-start' }}>
               {row.image_meta && (
                 <>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', backgroundColor: 'var(--nord1)', padding: '2px 8px', borderRadius: '4px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', backgroundColor: 'var(--bg-secondary)', padding: '2px 8px', borderRadius: '4px' }}>
                     <Tag minimal intent="primary">{row.image_meta.width}x{row.image_meta.height}</Tag>
                     <Button icon="clipboard" minimal small className="copy-btn" onClick={(e) => { e.stopPropagation(); copyToClipboard(`${row.image_meta?.width}x${row.image_meta?.height}`); }} />
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', backgroundColor: 'var(--nord1)', padding: '2px 8px', borderRadius: '4px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', backgroundColor: 'var(--bg-secondary)', padding: '2px 8px', borderRadius: '4px' }}>
                     <Tag minimal intent="warning">{row.image_meta.aspect}</Tag>
                     <Button icon="clipboard" minimal small className="copy-btn" onClick={(e) => { e.stopPropagation(); copyToClipboard(row.image_meta?.aspect || ''); }} />
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', backgroundColor: 'var(--nord1)', padding: '2px 8px', borderRadius: '4px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', backgroundColor: 'var(--bg-secondary)', padding: '2px 8px', borderRadius: '4px' }}>
                     <Tag minimal intent="success">{row.image_meta.file_size_kb.toFixed(1)} KB</Tag>
                     <Button icon="clipboard" minimal small className="copy-btn" onClick={(e) => { e.stopPropagation(); copyToClipboard(row.image_meta?.file_size_kb.toFixed(1) + " KB"); }} />
                   </div>
@@ -100,7 +100,7 @@ export function RowCard({ row, schema }: { row: Row; schema: Config }) {
                 <FieldRow key={col.name} col={col} value={row.columns[col.name]} />
               ))}
               {schema.columns.length > 8 && (
-                <Text style={{ color: 'var(--nord3)', fontStyle: 'italic', marginTop: '0.5rem', textAlign: 'left' }}>+ {schema.columns.length - 8} more fields (click to expand)</Text>
+                <Text style={{ color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '0.5rem', textAlign: 'left' }}>+ {schema.columns.length - 8} more fields (click to expand)</Text>
               )}
             </div>
           </div>
@@ -111,10 +111,10 @@ export function RowCard({ row, schema }: { row: Row; schema: Config }) {
         isOpen={isOpen}
         onClose={() => { setIsOpen(false); setIsEditing(false); }}
         title={`Row #${row.index} Details`}
-        className={Classes.DARK}
-        style={{ width: '95%', maxWidth: '1200px', backgroundColor: 'var(--nord0)' }}
+        className="theme-editorial"
+        style={{ width: '95%', maxWidth: '1200px', backgroundColor: 'var(--bg-primary)' }}
       >
-        <div className={Classes.DIALOG_BODY} style={{ color: 'var(--nord6)', textAlign: 'left' }}>
+        <div className={Classes.DIALOG_BODY} style={{ color: 'var(--text-primary)', textAlign: 'left' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
             <div style={{ textAlign: 'left' }}>
               <a href={getFileUrl(row.index, thumbnailCol)} target="_blank" rel="noreferrer">
@@ -124,9 +124,9 @@ export function RowCard({ row, schema }: { row: Row; schema: Config }) {
                   className="detail-dialog-img"
                 />
               </a>
-              <H5 style={{ color: 'var(--nord8)', borderBottom: '1px solid var(--nord2)', paddingBottom: '0.5rem', marginTop: '1.5rem', textAlign: 'left' }}>Image Properties</H5>
+              <H5 style={{ color: 'var(--accent-primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', marginTop: '1.5rem', textAlign: 'left' }}>Image Properties</H5>
               {row.image_meta ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', backgroundColor: 'var(--nord1)', padding: '1rem', borderRadius: '4px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', backgroundColor: 'var(--bg-secondary)', padding: '1rem', borderRadius: '4px' }}>
                   <div className="field-row">
                     <b style={{ minWidth: '100px' }}>Dimensions:</b> {row.image_meta.width} x {row.image_meta.height} px
                     <Button icon="clipboard" minimal small className="copy-btn" onClick={() => copyToClipboard(`${row.image_meta?.width}x${row.image_meta?.height}`)} />
@@ -141,13 +141,13 @@ export function RowCard({ row, schema }: { row: Row; schema: Config }) {
                   </div>
                 </div>
               ) : (
-                <Text style={{ color: 'var(--nord3)', textAlign: 'left' }}>No image properties available.</Text>
+                <Text style={{ color: 'var(--text-muted)', textAlign: 'left' }}>No image properties available.</Text>
               )}
             </div>
             
             <div style={{ overflow: 'auto' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--nord2)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
-                <H5 style={{ color: 'var(--nord8)', margin: 0, textAlign: 'left' }}>Metadata</H5>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
+                <H5 style={{ color: 'var(--accent-primary)', margin: 0, textAlign: 'left' }}>Metadata</H5>
                 {!isEditing ? (
                   <Button icon="edit" minimal small onClick={handleEditClick}>Edit</Button>
                 ) : (
@@ -157,7 +157,7 @@ export function RowCard({ row, schema }: { row: Row; schema: Config }) {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                 {schema.columns.map(col => (
                   <div key={col.name} style={{ marginBottom: '0.75rem' }}>
-                    <div style={{ color: 'var(--nord9)', fontWeight: 'bold', fontSize: '0.85rem', marginBottom: '0.2rem', textAlign: 'left' }}>{col.label}</div>
+                    <div style={{ color: 'var(--accent-secondary)', fontWeight: 'bold', fontSize: '0.85rem', marginBottom: '0.2rem', textAlign: 'left' }}>{col.label}</div>
                     {isEditing && col.editable ? (
                       <InputGroup
                         value={editedValues[col.name] ?? ''}
@@ -165,8 +165,8 @@ export function RowCard({ row, schema }: { row: Row; schema: Config }) {
                         intent={Intent.PRIMARY}
                       />
                     ) : (
-                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', backgroundColor: 'var(--nord1)', padding: '0.5rem', borderRadius: '4px' }}>
-                        <div style={{ color: 'var(--nord4)', wordBreak: 'break-all', flex: 1, textAlign: 'left' }}>
+                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', backgroundColor: 'var(--bg-secondary)', padding: '0.5rem', borderRadius: '4px' }}>
+                        <div style={{ color: 'var(--text-secondary)', wordBreak: 'break-all', flex: 1, textAlign: 'left' }}>
                           {formatValue(col, row.columns[col.name])}
                         </div>
                         <Button

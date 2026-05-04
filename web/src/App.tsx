@@ -36,10 +36,10 @@ function App() {
   }
 
   return (
-    <div className={Classes.DARK}>
-      <Navbar className={Classes.DARK}>
+    <div className="theme-editorial">
+      <Navbar className="theme-editorial">
         <Navbar.Group align={Alignment.LEFT}>
-          <Navbar.Heading style={{ fontWeight: 'bold', color: 'var(--nord8)' }}>Parq</Navbar.Heading>
+          <Navbar.Heading style={{ fontWeight: 'bold', color: 'var(--accent-primary)' }}>Parq</Navbar.Heading>
           <Navbar.Divider />
           <Button className={Classes.MINIMAL} icon="home" text="Explorer" />
           <Button className={Classes.MINIMAL} icon="info-sign" text="Stats" onClick={() => setIsStatsOpen(true)} />

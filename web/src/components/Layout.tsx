@@ -7,7 +7,7 @@ export function Layout({ schema }: { schema: Config }) {
   const { state } = useUrlState();
 
   return (
-    <div className="app-layout bp5-dark">
+    <div className="app-layout">
       <div className="sidebar">
         <Sidebar schema={schema} />
       </div>

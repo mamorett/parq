@@ -11,7 +11,7 @@ export function Thumbnail({ index, column }: { index: number; column?: string })
     <div style={{
       width: '100%',
       aspectRatio: '1',
-      backgroundColor: 'var(--nord1)',
+      backgroundColor: 'var(--bg-secondary)',
       borderRadius: '4px',
       display: 'flex',
       alignItems: 'center',
@@ -21,7 +21,7 @@ export function Thumbnail({ index, column }: { index: number; column?: string })
     }}>
       {loading && <Spinner size={20} style={{ position: 'absolute' }} />}
       {error ? (
-        <Icon icon="error" size={40} style={{ color: 'var(--nord3)' }} />
+        <Icon icon="error" size={40} style={{ color: 'var(--text-muted)' }} />
       ) : (
         <img
           src={url}

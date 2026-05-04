@@ -8,7 +8,7 @@ export function Sidebar({ schema }: { schema: Config }) {
 
   return (
     <div>
-      <H6 style={{ color: 'var(--nord8)' }}>Search</H6>
+      <H6 style={{ color: 'var(--accent-primary)' }}>Search</H6>
       <SearchBar schema={schema} />
       
       <Divider style={{ margin: '1rem 0' }} />

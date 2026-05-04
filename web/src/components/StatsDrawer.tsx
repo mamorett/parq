@@ -16,8 +16,8 @@ export function StatsDrawer({ isOpen, onClose }: { isOpen: boolean, onClose: () 
       title="Dataset Statistics"
       icon="info-sign"
       size="400px"
-      className={Classes.DARK}
-      style={{ backgroundColor: 'var(--nord0)', color: 'var(--nord6)' }}
+      className="theme-editorial"
+      style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
     >
       <div className={Classes.DRAWER_BODY} style={{ padding: '2rem' }}>
         {isLoading ? (
@@ -25,8 +25,8 @@ export function StatsDrawer({ isOpen, onClose }: { isOpen: boolean, onClose: () 
         ) : stats ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             <div>
-              <H5 style={{ color: 'var(--nord8)' }}>General</H5>
-              <div style={{ backgroundColor: 'var(--nord1)', padding: '1rem', borderRadius: '4px' }}>
+              <H5 style={{ color: 'var(--accent-primary)' }}>General</H5>
+              <div style={{ backgroundColor: 'var(--bg-secondary)', padding: '1rem', borderRadius: '4px' }}>
                 <div style={{ marginBottom: '0.5rem' }}><b>Total Rows:</b> {stats.total_rows.toLocaleString()}</div>
                 <div><b>File Size:</b> {(stats.file_size_bytes / 1024 / 1024).toFixed(2)} MB</div>
               </div>
@@ -35,10 +35,10 @@ export function StatsDrawer({ isOpen, onClose }: { isOpen: boolean, onClose: () 
             <Divider />
 
             <div>
-              <H5 style={{ color: 'var(--nord8)' }}>Images</H5>
-              <div style={{ backgroundColor: 'var(--nord1)', padding: '1rem', borderRadius: '4px' }}>
-                <div style={{ marginBottom: '0.5rem', color: 'var(--nord14)' }}><b>Found:</b> {stats.images_found.toLocaleString()}</div>
-                <div style={{ color: 'var(--nord11)' }}><b>Missing:</b> {stats.images_missing.toLocaleString()}</div>
+              <H5 style={{ color: 'var(--accent-primary)' }}>Images</H5>
+              <div style={{ backgroundColor: 'var(--bg-secondary)', padding: '1rem', borderRadius: '4px' }}>
+                <div style={{ marginBottom: '0.5rem', color: 'var(--bg-secondary4)' }}><b>Found:</b> {stats.images_found.toLocaleString()}</div>
+                <div style={{ color: 'var(--bg-secondary1)' }}><b>Missing:</b> {stats.images_missing.toLocaleString()}</div>
               </div>
             </div>
           </div>

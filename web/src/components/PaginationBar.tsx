@@ -7,7 +7,7 @@ export function PaginationBar({ total }: { total: number }) {
   const currentPage = state.page;
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem', backgroundColor: 'var(--nord1)', borderRadius: '4px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '4px' }}>
       <Text>Total: <b>{total}</b> rows</Text>
       <ButtonGroup>
         <Button

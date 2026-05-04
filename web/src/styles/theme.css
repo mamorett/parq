@@ -1,0 +1,220 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Space+Mono:wght@400;700&display=swap');
+
+:root {
+  /* Colors based on dating-web.png */
+  --bg-primary: #f5f0e6;
+  --bg-secondary: #eee9df;
+  --bg-tertiary: #e6e0d5;
+  --border-color: #231f1c; /* dark borders */
+  --border-light: #d8d2c6; /* subtle separators */
+  --text-primary: #231f1c;
+  --text-secondary: #5a544c;
+  --text-muted: #8c8375;
+  --accent-primary: #d54930; /* The terracotta red */
+  --accent-secondary: #356b3e; /* The green */
+  --status-success: #356b3e;
+  --status-error: #d54930;
+  --status-warning: #c2883a;
+  --status-info: #4a6b8c;
+
+  /* Typography */
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-mono: 'Space Mono', 'Courier New', monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+  font-family: var(--font-sans) !important;
+  margin: 0;
+  padding: 0;
+}
+
+/* Blueprint overrides for editorial theme */
+#root {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.bp5-navbar {
+  background-color: var(--bg-primary) !important;
+  box-shadow: none !important;
+  border-bottom: 1px solid var(--border-color) !important;
+}
+
+.bp5-navbar-heading {
+  font-family: var(--font-serif) !important;
+  font-weight: 700 !important;
+  font-size: 2rem !important;
+  color: var(--text-primary) !important;
+  letter-spacing: -0.02em;
+}
+
+/* App layout (from Layout.tsx) */
+.app-layout {
+  display: flex;
+  height: calc(100vh - 50px);
+  background-color: var(--bg-primary);
+}
+
+.sidebar {
+  width: 250px;
+  background-color: transparent;
+  border-right: 1px solid var(--border-color);
+  padding: 2rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content {
+  flex: 1;
+  padding: 2rem 3rem;
+  overflow-y: auto;
+  background-color: transparent;
+}
+
+/* RowCard styling */
+.bp5-card,
+.bp5-elevation-0,
+.bp5-elevation-1,
+.bp5-elevation-2,
+.bp5-elevation-3,
+.bp5-elevation-4 {
+  background-color: var(--bg-primary) !important;
+  box-shadow: none !important;
+  border: 1px solid var(--border-light) !important;
+  border-radius: 0 !important;
+  transition: border-color 0.2s !important;
+}
+
+.bp5-card:hover {
+  border-color: var(--border-color) !important;
+}
+
+/* Headings and specific text */
+h1, h2, h3, h4, h5, h6, .bp5-heading {
+  font-family: var(--font-mono) !important;
+  color: var(--text-primary) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 400 !important;
+}
+
+.bp5-dialog, .bp5-drawer {
+  background-color: var(--bg-primary) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 0 !important;
+  box-shadow: 0 10px 30px rgba(35, 31, 28, 0.1) !important;
+  color: var(--text-primary) !important;
+}
+
+.bp5-dialog-header, .bp5-drawer-header {
+  background-color: var(--bg-primary) !important;
+  box-shadow: none !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  border-radius: 0 !important;
+}
+
+.bp5-dialog-footer {
+  background-color: var(--bg-primary) !important;
+  border-top: 1px solid var(--border-color) !important;
+}
+
+.bp5-input, .bp5-html-select select {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-light) !important;
+  border-radius: 0 !important;
+  font-family: var(--font-mono) !important;
+  box-shadow: none !important;
+}
+
+.bp5-input:focus, .bp5-html-select select:focus {
+  border-color: var(--border-color) !important;
+  box-shadow: none !important;
+}
+
+.bp5-button {
+  background-color: transparent !important;
+  background-image: none !important;
+  border: 1px solid var(--border-light) !important;
+  border-radius: 0 !important;
+  color: var(--text-primary) !important;
+  font-family: var(--font-mono) !important;
+  text-transform: uppercase;
+  font-size: 0.75rem !important;
+  letter-spacing: 0.05em;
+  box-shadow: none !important;
+}
+
+.bp5-button:hover {
+  border-color: var(--border-color) !important;
+  background-color: var(--bg-secondary) !important;
+}
+
+.bp5-button.bp5-minimal {
+  border: none !important;
+}
+
+.bp5-button.bp5-minimal:hover {
+  background-color: rgba(0,0,0,0.05) !important;
+}
+
+.bp5-tag {
+  border-radius: 0 !important;
+  font-family: var(--font-mono) !important;
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-secondary) !important;
+  border: 1px solid var(--border-light) !important;
+}
+
+.bp5-tag.bp5-intent-primary { color: var(--accent-primary) !important; border-color: var(--accent-primary) !important; background: transparent !important; }
+.bp5-tag.bp5-intent-success { color: var(--status-success) !important; border-color: var(--status-success) !important; background: transparent !important; }
+.bp5-tag.bp5-intent-warning { color: var(--status-warning) !important; border-color: var(--status-warning) !important; background: transparent !important; }
+
+/* Detail labels */
+.field-row {
+  margin-bottom: 0.5rem;
+}
+
+.field-row b {
+  font-family: var(--font-mono) !important;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary) !important;
+}
+
+.field-value {
+  font-family: var(--font-serif) !important;
+  font-size: 0.95rem;
+  color: var(--text-primary) !important;
+}
+
+/* Row numbers */
+h5[style*="color: var(--accent-primary)"] {
+  font-family: var(--font-serif) !important;
+  font-size: 1.4rem !important;
+  font-weight: 700 !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  color: var(--text-primary) !important;
+}
+
+/* Remove nord artifacts */
+.theme-editorial {
+  /* Scope for overriding any left-over dark theme */
+  color: var(--text-primary) !important;
+}
+
+/* Fix detail dialog image size */
+.detail-dialog-img {
+  max-width: 100%;
+  max-height: 400px;
+  object-fit: contain;
+  margin-bottom: 1rem;
+}
