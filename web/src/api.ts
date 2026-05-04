@@ -69,6 +69,6 @@ export function getFileUrl(index: number, column?: string): string {
   return url.toString();
 }
 
-export function getDownloadUrl(index: number, column: string): string {
-  return `${API_BASE}/rows/${index}/download?col=${column}`;
+export function getDownloadUrl(index: number): string {
+  return `${API_BASE}/rows/${index}/download`;
 }

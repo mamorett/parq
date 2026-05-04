@@ -1,12 +1,16 @@
 import { useState } from 'react';
-import { Card, Elevation, H5, Text, Tag, Button, Dialog, Classes } from '@blueprintjs/core';
+import { Card, Elevation, H5, Text, Tag, Button, Dialog, Classes, InputGroup, Intent } from '@blueprintjs/core';
 import type { Row, Config } from '../types';
 import { Thumbnail } from './Thumbnail';
-import { getDownloadUrl, getThumbnailUrl, getFileUrl } from '../api';
+import { getDownloadUrl, getFileUrl } from '../api';
 import { formatDate } from '../utils';
+import { useUpdateRow } from '../hooks/useUpdateRow';
 
 export function RowCard({ row, schema }: { row: Row; schema: Config }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedValues, setEditedValues] = useState<Record<string, any>>({});
+  const updateRowMutation = useUpdateRow();
   const thumbnailCol = schema.thumbnail.column;
 
   const copyToClipboard = (text: string) => {
@@ -14,14 +18,32 @@ export function RowCard({ row, schema }: { row: Row; schema: Config }) {
   };
 
   const formatValue = (col: any, val: any) => {
+    if (val === null || val === undefined) return '';
     if (col.format === 'datetime') return formatDate(val);
+    const formattedDate = formatDate(val);
+    if (formattedDate !== String(val) && formattedDate !== '') {
+      return formattedDate;
+    }
     return String(val);
+  };
+
+  const handleEditClick = () => {
+    setIsEditing(true);
+    setEditedValues({ ...row.columns });
+  };
+
+  const handleSaveClick = () => {
+    updateRowMutation.mutate(
+      { index: row.index, columns: editedValues },
+      {
+        onSuccess: () => setIsEditing(false),
+      }
+    );
   };
 
   const FieldRow = ({ col, value }: { col: any, value: any }) => (
     <div className="field-row">
       <b style={{ color: 'var(--nord9)', minWidth: '120px' }}>{col.label}:</b>
-      <span className="field-value">{formatValue(col, value)}</span>
       <Button
         icon="clipboard"
         minimal
@@ -29,6 +51,7 @@ export function RowCard({ row, schema }: { row: Row; schema: Config }) {
         className="copy-btn"
         onClick={(e) => { e.stopPropagation(); copyToClipboard(formatValue(col, value)); }}
       />
+      <span className="field-value">{formatValue(col, value)}</span>
     </div>
   );
 
@@ -49,7 +72,7 @@ export function RowCard({ row, schema }: { row: Row; schema: Config }) {
               <H5 style={{ color: 'var(--nord8)', margin: 0, textAlign: 'left' }}>Row #{row.index}</H5>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <Button icon="maximize" minimal small onClick={(e) => { e.stopPropagation(); setIsOpen(true); }} />
-                <Button icon="download" minimal small onClick={(e) => { e.stopPropagation(); window.open(getDownloadUrl(row.index, thumbnailCol)); }} />
+                <Button icon="download" minimal small onClick={(e) => { e.stopPropagation(); window.open(getDownloadUrl(row.index)); }} />
               </div>
             </div>
 
@@ -86,7 +109,7 @@ export function RowCard({ row, schema }: { row: Row; schema: Config }) {
 
       <Dialog
         isOpen={isOpen}
-        onClose={() => setIsOpen(false)}
+        onClose={() => { setIsOpen(false); setIsEditing(false); }}
         title={`Row #${row.index} Details`}
         className={Classes.DARK}
         style={{ width: '95%', maxWidth: '1200px', backgroundColor: 'var(--nord0)' }}
@@ -123,22 +146,37 @@ export function RowCard({ row, schema }: { row: Row; schema: Config }) {
             </div>
             
             <div style={{ overflow: 'auto' }}>
-              <H5 style={{ color: 'var(--nord8)', borderBottom: '1px solid var(--nord2)', paddingBottom: '0.5rem', textAlign: 'left' }}>Metadata</H5>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--nord2)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
+                <H5 style={{ color: 'var(--nord8)', margin: 0, textAlign: 'left' }}>Metadata</H5>
+                {!isEditing ? (
+                  <Button icon="edit" minimal small onClick={handleEditClick}>Edit</Button>
+                ) : (
+                  <Button icon="cross" minimal small onClick={() => setIsEditing(false)}>Cancel</Button>
+                )}
+              </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                 {schema.columns.map(col => (
                   <div key={col.name} style={{ marginBottom: '0.75rem' }}>
                     <div style={{ color: 'var(--nord9)', fontWeight: 'bold', fontSize: '0.85rem', marginBottom: '0.2rem', textAlign: 'left' }}>{col.label}</div>
-                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', backgroundColor: 'var(--nord1)', padding: '0.5rem', borderRadius: '4px' }}>
-                      <div style={{ color: 'var(--nord4)', wordBreak: 'break-all', flex: 1, textAlign: 'left' }}>
-                        {formatValue(col, row.columns[col.name])}
-                      </div>
-                      <Button
-                        icon="clipboard"
-                        minimal
-                        small
-                        onClick={() => copyToClipboard(formatValue(col, row.columns[col.name]))}
+                    {isEditing && col.editable ? (
+                      <InputGroup
+                        value={editedValues[col.name] ?? ''}
+                        onChange={(e) => setEditedValues({ ...editedValues, [col.name]: e.target.value })}
+                        intent={Intent.PRIMARY}
                       />
-                    </div>
+                    ) : (
+                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', backgroundColor: 'var(--nord1)', padding: '0.5rem', borderRadius: '4px' }}>
+                        <div style={{ color: 'var(--nord4)', wordBreak: 'break-all', flex: 1, textAlign: 'left' }}>
+                          {formatValue(col, row.columns[col.name])}
+                        </div>
+                        <Button
+                          icon="clipboard"
+                          minimal
+                          small
+                          onClick={() => copyToClipboard(formatValue(col, row.columns[col.name]))}
+                        />
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -147,7 +185,16 @@ export function RowCard({ row, schema }: { row: Row; schema: Config }) {
         </div>
         <div className={Classes.DIALOG_FOOTER}>
           <div className={Classes.DIALOG_FOOTER_ACTIONS}>
-            <Button onClick={() => setIsOpen(false)}>Close</Button>
+            {isEditing && (
+              <Button 
+                intent={Intent.SUCCESS} 
+                onClick={handleSaveClick}
+                loading={updateRowMutation.isPending}
+              >
+                Save Changes
+              </Button>
+            )}
+            <Button onClick={() => { setIsOpen(false); setIsEditing(false); }}>Close</Button>
           </div>
         </div>
       </Dialog>

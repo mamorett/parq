@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -14,25 +15,15 @@ func (s *Server) handleDownload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	col := r.URL.Query().Get("col")
-	if col == "" {
-		http.Error(w, "missing col parameter", http.StatusBadRequest)
-		return
-	}
-
 	row, err := s.store.Get(idx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
-	val, ok := row.Columns[col]
-	if !ok {
-		http.Error(w, "column not found", http.StatusBadRequest)
-		return
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"row_%d.json\"", idx))
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(row.Columns); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-
-	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s_%d.txt\"", col, idx))
-	w.Header().Set("Content-Type", "application/octet-stream")
-	fmt.Fprintf(w, "%v", val)
 }

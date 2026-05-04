@@ -212,4 +212,38 @@ func detectType(col *ColumnDef, field parquet.Field, samples []map[string]any) {
 	if col.Type == "string" && col.Format != "datetime" {
 		col.Editable = true
 	}
+
+	// Heuristic for numeric dates (INT32/INT64)
+	if col.Type == "int" {
+		dateCount := 0
+		nonNullCount := 0
+		for _, sample := range samples {
+			val, ok := sample[col.Name]
+			if !ok || val == nil {
+				continue
+			}
+			var num int64
+			switch v := val.(type) {
+			case int64:
+				num = v
+			case int32:
+				num = int64(v)
+			case int:
+				num = int64(v)
+			default:
+				continue
+			}
+
+			nonNullCount++
+			// Heuristic: seconds, millis, micros, or nanos (2000-3000)
+			// Year 2000 (seconds): 946,684,800
+			// Year 3000 (nanos): 32,503,680,000,000,000,000 (approx)
+			if num >= 946684800 && num <= 4000000000000000000 {
+				dateCount++
+			}
+		}
+		if nonNullCount > 0 && float64(dateCount)/float64(nonNullCount) >= 0.8 {
+			col.Format = "datetime"
+		}
+	}
 }

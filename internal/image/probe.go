@@ -44,8 +44,16 @@ func Probe(path string) (*ImageMeta, error) {
 	}
 
 	if config.Height > 0 {
-		meta.Aspect = fmt.Sprintf("%d:%d", config.Width, config.Height)
+		common := gcd(config.Width, config.Height)
+		meta.Aspect = fmt.Sprintf("%d:%d", config.Width/common, config.Height/common)
 	}
 
 	return meta, nil
+}
+
+func gcd(a, b int) int {
+	for b != 0 {
+		a, b = b, a%b
+	}
+	return a
 }
