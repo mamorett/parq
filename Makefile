@@ -2,7 +2,7 @@
 .PHONY: build-backend build-frontend build docker dev lint test
 
 # Go settings
-GO_BIN = parq-server
+GO_BIN = parq
 
 # Frontend settings
 WEB_DIR = web

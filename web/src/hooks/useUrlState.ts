@@ -13,6 +13,7 @@ export function useUrlState() {
       search: searchParams.get('search') || '',
       search_col: searchParams.get('search_col') || undefined,
       subdirs: searchParams.getAll('subdir'),
+      showStats: searchParams.get('showStats') === 'true',
     };
   }, [searchParams]);
 

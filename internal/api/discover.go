@@ -16,6 +16,11 @@ func (s *Server) handleDiscover(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if body.ParquetFile == "" {
+		http.Error(w, "parquet_file is required", http.StatusBadRequest)
+		return
+	}
+
 	cfg, err := config.Discover(body.ParquetFile)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

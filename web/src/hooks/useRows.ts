@@ -9,9 +9,10 @@ export function useRows(params: {
   search?: string;
   search_col?: string;
   subdirs?: string[];
+  parquet?: string;
 }) {
   return useQuery({
-    queryKey: ['rows', params],
+    queryKey: ['rows', params.parquet || 'default', params],
     queryFn: () => fetchRows(params),
     enabled: !!params.size,
   });

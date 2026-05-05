@@ -1,14 +1,35 @@
 import { useEffect, useState } from 'react';
-import { Navbar, Alignment, Button, Classes, NonIdealState, Spinner } from '@blueprintjs/core';
-import { useSchema } from './hooks/useSchema';
+import { Navbar, NavbarGroup, Alignment, Button, Classes, NonIdealState, Spinner, MenuItem } from '@blueprintjs/core';
+import { Select } from '@blueprintjs/select';
+import { useSchema, useParquets } from './hooks/useSchema';
 import { useUrlState } from './hooks/useUrlState';
 import { Layout } from './components/Layout';
 import { StatsDrawer } from './components/StatsDrawer';
 
 function App() {
-  const { data: schema, isLoading, error } = useSchema();
+  const { data: parquets, isLoading: loadingParquets } = useParquets();
+  const [activeParquet, setActiveParquet] = useState<string>('');
+  const { data: schema, isLoading, error } = useSchema(activeParquet || undefined);
   const { state, updateState } = useUrlState();
-  const [isStatsOpen, setIsStatsOpen] = useState(false);
+
+  // Initialize active parquet from URL or first available
+  useEffect(() => {
+    const urlParquet = new URLSearchParams(window.location.search).get('parquet');
+    if (urlParquet) {
+      setActiveParquet(urlParquet);
+    } else if (parquets && parquets.length > 0) {
+      setActiveParquet(parquets[0]);
+    }
+  }, [parquets]);
+
+  // Update URL when parquet changes
+  useEffect(() => {
+    if (activeParquet) {
+      const url = new URL(window.location.href);
+      url.searchParams.set('parquet', activeParquet);
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, [activeParquet]);
 
   useEffect(() => {
     if (schema && state.size === 0) {
@@ -16,7 +37,7 @@ function App() {
     }
   }, [schema, state.size, updateState]);
 
-  if (isLoading) {
+  if (isLoading || loadingParquets) {
     return (
       <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center' }}>
         <Spinner size={50} />
@@ -35,18 +56,38 @@ function App() {
     );
   }
 
+  const parquetSelect = (
+    <Select<string>
+      items={parquets || []}
+      itemRenderer={(item, { handleClick, modifiers }) => {
+        if (!modifiers.matchesPredicate) return null;
+        return <MenuItem key={item} text={item} active={item === activeParquet} onClick={handleClick} />;
+      }}
+      onItemSelect={(item) => setActiveParquet(item)}
+      popoverProps={{ minimal: true }}
+    >
+      <Button minimal small text={activeParquet || 'Select file'} icon="database" />
+    </Select>
+  );
+
   return (
     <div className="theme-editorial">
       <Navbar className="theme-editorial">
-        <Navbar.Group align={Alignment.LEFT}>
+        <NavbarGroup align={Alignment.LEFT}>
           <Navbar.Heading style={{ fontWeight: 'bold', color: 'var(--accent-primary)' }}>Parq</Navbar.Heading>
           <Navbar.Divider />
+          {parquets && parquets.length > 1 && (
+            <>
+              {parquetSelect}
+              <Navbar.Divider />
+            </>
+          )}
           <Button className={Classes.MINIMAL} icon="home" text="Explorer" />
-          <Button className={Classes.MINIMAL} icon="info-sign" text="Stats" onClick={() => setIsStatsOpen(true)} />
-        </Navbar.Group>
+          <Button className={Classes.MINIMAL} icon="info-sign" text="Stats" onClick={() => updateState({ showStats: true })} />
+        </NavbarGroup>
       </Navbar>
-      <Layout schema={schema!} />
-      <StatsDrawer isOpen={isStatsOpen} onClose={() => setIsStatsOpen(false)} />
+      <Layout schema={schema!} parquetName={activeParquet} />
+      <StatsDrawer isOpen={state.showStats} onClose={() => updateState({ showStats: false })} parquetName={activeParquet} />
     </div>
   );
 }

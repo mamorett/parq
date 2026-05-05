@@ -6,11 +6,11 @@ import { getDownloadUrl, getFileUrl } from '../api';
 import { formatDate } from '../utils';
 import { useUpdateRow } from '../hooks/useUpdateRow';
 
-export function RowCard({ row, schema }: { row: Row; schema: Config }) {
+export function RowCard({ row, schema, parquetName }: { row: Row; schema: Config; parquetName?: string }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedValues, setEditedValues] = useState<Record<string, any>>({});
-  const updateRowMutation = useUpdateRow();
+  const updateRowMutation = useUpdateRow(parquetName);
   const thumbnailCol = schema.thumbnail.column;
 
   const copyToClipboard = (text: string) => {
@@ -41,6 +41,9 @@ export function RowCard({ row, schema }: { row: Row; schema: Config }) {
     );
   };
 
+  const isLargeField = (name: string) =>
+    ['image_path', 'prompt', 'description', 'created_at', 'modified_at'].includes(name);
+
   const FieldRow = ({ col, value }: { col: any, value: any }) => (
     <div className="field-row">
       <b style={{ color: 'var(--accent-secondary)', minWidth: '120px' }}>{col.label}:</b>
@@ -65,14 +68,14 @@ export function RowCard({ row, schema }: { row: Row; schema: Config }) {
       >
         <div style={{ display: 'flex', gap: '2rem' }}>
           <div style={{ width: '180px', flexShrink: 0 }}>
-            <Thumbnail index={row.index} column={thumbnailCol} />
+            <Thumbnail index={row.index} column={thumbnailCol} parquetName={parquetName} />
           </div>
           <div style={{ flex: 1, overflow: 'hidden', textAlign: 'left' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
               <H5 style={{ color: 'var(--accent-primary)', margin: 0, textAlign: 'left' }}>Row #{row.index}</H5>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <Button icon="maximize" minimal small onClick={(e) => { e.stopPropagation(); setIsOpen(true); }} />
-                <Button icon="download" minimal small onClick={(e) => { e.stopPropagation(); window.open(getDownloadUrl(row.index)); }} />
+                <Button icon="download" minimal small onClick={(e) => { e.stopPropagation(); window.open(getDownloadUrl(row.index, parquetName)); }} />
               </div>
             </div>
 
@@ -117,9 +120,9 @@ export function RowCard({ row, schema }: { row: Row; schema: Config }) {
         <div className={Classes.DIALOG_BODY} style={{ color: 'var(--text-primary)', textAlign: 'left' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
             <div style={{ textAlign: 'left' }}>
-              <a href={getFileUrl(row.index, thumbnailCol)} target="_blank" rel="noreferrer">
+              <a href={getFileUrl(row.index, thumbnailCol, parquetName)} target="_blank" rel="noreferrer">
                 <img
-                  src={getFileUrl(row.index, thumbnailCol)}
+                  src={getFileUrl(row.index, thumbnailCol, parquetName)}
                   alt="Full Res"
                   className="detail-dialog-img"
                 />
@@ -144,7 +147,7 @@ export function RowCard({ row, schema }: { row: Row; schema: Config }) {
                 <Text style={{ color: 'var(--text-muted)', textAlign: 'left' }}>No image properties available.</Text>
               )}
             </div>
-            
+
             <div style={{ overflow: 'auto' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
                 <H5 style={{ color: 'var(--accent-primary)', margin: 0, textAlign: 'left' }}>Metadata</H5>
@@ -157,7 +160,7 @@ export function RowCard({ row, schema }: { row: Row; schema: Config }) {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                 {schema.columns.map(col => (
                   <div key={col.name} style={{ marginBottom: '0.75rem' }}>
-                    <div style={{ color: 'var(--accent-secondary)', fontWeight: 'bold', fontSize: '0.85rem', marginBottom: '0.2rem', textAlign: 'left' }}>{col.label}</div>
+                    <div style={{ color: 'var(--accent-secondary)', fontWeight: 'bold', fontSize: isLargeField(col.name) ? '1rem' : '0.85rem', marginBottom: '0.2rem', textAlign: 'left' }}>{col.label}</div>
                     {isEditing && col.editable ? (
                       <InputGroup
                         value={editedValues[col.name] ?? ''}
@@ -166,7 +169,7 @@ export function RowCard({ row, schema }: { row: Row; schema: Config }) {
                       />
                     ) : (
                       <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', backgroundColor: 'var(--bg-secondary)', padding: '0.5rem', borderRadius: '4px' }}>
-                        <div style={{ color: 'var(--text-secondary)', wordBreak: 'break-all', flex: 1, textAlign: 'left', fontFamily: 'var(--font-serif)' }}>
+                        <div style={{ color: 'var(--text-secondary)', wordBreak: 'break-all', flex: 1, textAlign: 'left', fontFamily: 'var(--font-serif)', fontSize: isLargeField(col.name) ? '1rem' : undefined }}>
                           {formatValue(col, row.columns[col.name])}
                         </div>
                         <Button
@@ -186,8 +189,8 @@ export function RowCard({ row, schema }: { row: Row; schema: Config }) {
         <div className={Classes.DIALOG_FOOTER}>
           <div className={Classes.DIALOG_FOOTER_ACTIONS}>
             {isEditing && (
-              <Button 
-                intent={Intent.SUCCESS} 
+              <Button
+                intent={Intent.SUCCESS}
                 onClick={handleSaveClick}
                 loading={updateRowMutation.isPending}
               >

@@ -10,6 +10,8 @@
 
 ## 🚀 Key Features
 
+- **📂 Multi-File Support**: Browse multiple Parquet files from a single server instance with a file switcher in the UI.
+- **🛠️ Batch Config Generator**: `parq discover --dir /data/` scans a directory and generates `parqs.json` for all Parquet files at once.
 - **🔍 Smart Autodiscovery**: Point it at any Parquet file and it will automatically guess column types, identify path columns, and detect datetime formats.
 - **🖼️ Media Probing**: Automatically extracts image dimensions, aspect ratios, and file sizes from path columns.
 - **⚡ Fast Search & Filter**: Substring search across all columns, exact filters, and subdirectory-based path filtering.
@@ -20,49 +22,119 @@
 
 ## 🛠️ Quick Start (Docker)
 
-The fastest way to explore a Parquet file:
+Point Parq at a directory of Parquet files — auto-discovery handles the rest:
 
 ```bash
 docker run -p 8080:8080 \
   -v /path/to/your/data:/data \
   trithemius/parq \
-  -parquet /data/your_file.parquet
+  -config /data/parqs.json
+```
+
+Or let it scan and auto-generate config on startup:
+
+```bash
+docker run -p 8080:8080 \
+  -v /path/to/your/data:/data \
+  trithemius/parq \
+  -auto-discover -parquet /data/your_file.parquet
 ```
 
 Visit `http://localhost:8080` and you're ready to go!
 
-## ⚙️ Configuration (`schema.json`)
+## ⚙️ Configuration (`parqs.json`)
 
-While Parq can autodiscover your schema, you can customize the experience with a `schema.json` file.
+Define how each Parquet file should be displayed. If a file has no explicit `columns`, Parq auto-discovers its schema at startup.
 
-```json
+```jsonc
 {
-  "parquet_file": "/data/vision_ai.parquet",
-  "columns": [
+  "parquets": [
+    // Auto-discovered — no manual config needed
+    { "path": "/data/vision_ai.parquet" },
+
+    // Explicit config for fine-grained control
     {
-      "name": "image_path",
-      "type": "path",
-      "label": "Source Image",
-      "probe_dimensions": true,
-      "remap": [
-        { "pattern": "^/old/mnt/(.+)$", "replace": "/data/new/$1" }
-      ]
-    },
-    {
-      "name": "prompt",
-      "type": "string",
-      "label": "AI Prompt",
-      "searchable": true,
-      "editable": true
+      "path": "/data/metadata.parquet",
+      "columns": [
+        {
+          "name": "image_path",
+          "type": "path",
+          "label": "Source Image",
+          "probe_dimensions": true,
+          "remap": [
+            { "pattern": "^/old/mnt/(.+)$", "replace": "/data/new/$1" }
+          ]
+        },
+        {
+          "name": "prompt",
+          "type": "string",
+          "label": "AI Prompt",
+          "searchable": true,
+          "editable": true
+        }
+      ],
+      "default_sort": { "column": "created_at", "order": "desc" },
+      "thumbnail": { "column": "image_path", "max_size": 300, "format": "webp" }
     }
-  ],
-  "default_sort": { "column": "created_at", "order": "desc" }
+  ]
 }
+```
+
+| Field | Description |
+|-------|-------------|
+| `path` | Absolute path to the `.parquet` file |
+| `name` | (optional) Display name in the UI file switcher; defaults to filename without extension |
+| `columns` | Column definitions (omit to auto-discover) |
+| `default_sort` | Initial sort column and direction |
+| `pagination` | `default_page_size` and `page_size_options` |
+| `thumbnail` | Which column to use for thumbnails, max size, and format (`webp` or `jpeg`) |
+
+### Column definition reference
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | string | Column name in the Parquet file |
+| `type` | `string` \| `int` \| `blob` \| `path` | How to render and interact with values |
+| `label` | string | Display label in the table header |
+| `searchable` | bool | Include in full-text search |
+| `editable` | bool | Allow inline editing in the UI |
+| `sortable` | bool | Column supports sorting |
+| `copyable` | bool | Show a copy-to-clipboard button |
+| `hidden` | bool | Hide from the table view |
+| `format` | `"datetime"` or empty | Special rendering (timestamps) |
+| `remap` | `[{pattern, replace}]` | Regex path remapping rules |
+| `probe_dimensions` | bool | Extract image width/height for path columns |
+
+## 🛠️ CLI Tool: `parq discover`
+
+Generate `parqs.json` config from one or many Parquet files without writing any JSON by hand.
+
+### Single file
+
+```bash
+parq discover --parquet /data/file.parquet
+# Prints auto-discovered config to stdout
+```
+
+### Batch (directory)
+
+```bash
+parq discover --dir /data/
+# Scans /data/*.parquet, prints MultiConfig JSON
+
+parq discover --dir /data/ --output parqs.json
+# Same, written to file
+```
+
+### Multiple specific files
+
+```bash
+parq discover --parquet /data/a.parquet --parquet /data/b.parquet
 ```
 
 ## 🏗️ Architecture
 
-- **Backend**: Go 1.25 REST API. Uses an in-memory `RowStore` for blazing-fast queries and `fsnotify` for hot-reloading when the Parquet file changes.
+- **Backend**: Go REST API. Uses a `MultiStore` holding one in-memory `MemoryStore` per Parquet file. Watches all files via `fsnotify` for hot-reload.
 - **Frontend**: React 18 SPA using BlueprintJS for a dense, professional UI and TanStack Query for efficient data synchronization.
 - **Persistence**: Edits are persisted back to the Parquet file using the `parquet-go` library.
 
@@ -79,14 +151,30 @@ While Parq can autodiscover your schema, you can customize the experience with a
    go mod tidy
    cd web && npm install
    ```
-3. Run the backend:
+3. Generate config:
    ```bash
-   go run main.go -parquet ./data.parquet -auto-discover
+   go run main.go discover --dir ./testdata/ --output parqs.json
    ```
-4. Run the frontend:
+4. Run the backend:
+   ```bash
+   go run main.go --config ./parqs.json
+   ```
+5. Run the frontend:
    ```bash
    cd web && npm run dev
    ```
+
+### Server flags
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `-config` | `./parqs.json` | Path to multi-parquet config |
+| `-addr` | `:8080` | Listen address |
+| `-base-path` | `/` | URL prefix for reverse-proxy |
+| `-static-dir` | `./web/dist` | React build directory |
+| `-cors-origins` | `*` | Allowed CORS origins |
+| `-auto-discover` | `false` | Generate `parqs.json` on startup if missing |
+| `-parquet` | — | Single parquet file path (used with `-auto-discover`) |
 
 ## 📄 License
 

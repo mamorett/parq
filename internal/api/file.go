@@ -7,6 +7,20 @@ import (
 
 func (s *Server) handleGetFile(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
+	name := q.Get("parquet")
+	if name == "" {
+		names := s.store.StoreNames()
+		if len(names) > 0 {
+			name = names[0]
+		}
+	}
+
+	store, err := s.store.StoreFor(name)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
 	idxStr := q.Get("idx")
 	idx, err := strconv.Atoi(idxStr)
 	if err != nil {
@@ -16,10 +30,16 @@ func (s *Server) handleGetFile(w http.ResponseWriter, r *http.Request) {
 
 	col := q.Get("col")
 	if col == "" {
-		col = s.cfg.Thumbnail.Column
+		// Get from config
+		cfg, err := s.store.GetConfig(name)
+		if err != nil || cfg.Thumbnail.Column == "" {
+			http.Error(w, "no default column configured", http.StatusBadRequest)
+			return
+		}
+		col = cfg.Thumbnail.Column
 	}
 
-	row, err := s.store.Get(idx)
+	row, err := store.Get(idx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
@@ -37,10 +57,5 @@ func (s *Server) handleGetFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Apply remapping if exists
-	finalPath := path
-	// In a real scenario we'd use the rewriter from store
-	// For now we'll serve the file directly
-	
-	http.ServeFile(w, r, finalPath)
+	http.ServeFile(w, r, path)
 }

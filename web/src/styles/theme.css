@@ -253,3 +253,42 @@ h5[style*="color: var(--accent-primary)"] {
   object-fit: contain;
   margin-bottom: 1rem;
 }
+
+/* Select dropdown popover and menu items */
+.bp6-popover,
+.bp6-popover-content,
+.bp6-menu,
+.bp6-menu-list {
+  font-family: var(--font-mono) !important;
+  color: var(--text-primary) !important;
+  background-color: var(--bg-primary) !important;
+}
+
+.bp6-popover .bp6-popover-arrow-fill {
+  fill: var(--bg-primary) !important;
+}
+
+.bp6-menu-item {
+  font-family: var(--font-mono) !important;
+  color: var(--text-primary) !important;
+  background-color: transparent !important;
+}
+
+.bp6-menu-item:hover,
+.bp6-menu-item:focus {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+.bp6-menu-item.bp6-active {
+  background-color: var(--accent-primary) !important;
+  color: var(--bg-primary) !important;
+}
+
+.bp6-menu-item-label {
+  color: var(--text-muted) !important;
+}
+
+.bp6-popover .bp6-divider {
+  background-color: var(--border-color) !important;
+}

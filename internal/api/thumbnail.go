@@ -9,6 +9,20 @@ import (
 
 func (s *Server) handleGetThumbnail(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
+	name := q.Get("parquet")
+	if name == "" {
+		names := s.store.StoreNames()
+		if len(names) > 0 {
+			name = names[0]
+		}
+	}
+
+	store, cfg, err := s.getStoreAndConfig(name)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
 	idxStr := q.Get("idx")
 	idx, err := strconv.Atoi(idxStr)
 	if err != nil {
@@ -18,10 +32,10 @@ func (s *Server) handleGetThumbnail(w http.ResponseWriter, r *http.Request) {
 
 	col := q.Get("col")
 	if col == "" {
-		col = s.cfg.Thumbnail.Column
+		col = cfg.Thumbnail.Column
 	}
 
-	row, err := s.store.Get(idx)
+	row, err := store.Get(idx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
@@ -39,11 +53,8 @@ func (s *Server) handleGetThumbnail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// In Phase 2, we would apply path remapping here if needed
-	// For now, assume path is valid or relative to CWD
-
 	w.Header().Set("Content-Type", "image/jpeg")
-	err = thumbnail.Generate(path, s.cfg.Thumbnail.MaxSize, s.cfg.Thumbnail.Format, w)
+	err = thumbnail.Generate(path, cfg.Thumbnail.MaxSize, cfg.Thumbnail.Format, w)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
