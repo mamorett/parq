@@ -40,8 +40,16 @@ func (e *ParquetEntry) Resolve() (*Config, error) {
 		if e.Pagination.DefaultPageSize != 0 {
 			cfg.Pagination = e.Pagination
 		}
-		if e.Thumbnail.MaxSize != 0 {
-			cfg.Thumbnail = e.Thumbnail
+		if e.Thumbnail.MaxSize != 0 || e.Thumbnail.Column != "" {
+			if e.Thumbnail.MaxSize != 0 {
+				cfg.Thumbnail.MaxSize = e.Thumbnail.MaxSize
+			}
+			if e.Thumbnail.Column != "" {
+				cfg.Thumbnail.Column = e.Thumbnail.Column
+			}
+			if e.Thumbnail.Format != "" {
+				cfg.Thumbnail.Format = e.Thumbnail.Format
+			}
 		}
 		return cfg, nil
 	}

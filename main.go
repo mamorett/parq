@@ -56,9 +56,10 @@ func main() {
 			base := filepath.Base(path)
 			name := strings.TrimSuffix(base, filepath.Ext(base))
 			entries = append(entries, config.ParquetEntry{
-				Path:    path,
-				Name:    name,
-				Columns: discovered.Columns,
+				Path:      path,
+				Name:      name,
+				Columns:   discovered.Columns,
+				Thumbnail: discovered.Thumbnail,
 			})
 		}
 		mc := &config.MultiConfig{Parquets: entries}
