@@ -135,3 +135,40 @@ select option {
   color: var(--text-h);
   background-color: var(--bg);
 }
+
+/* Style Blueprint Select dropdown popover and items */
+.bp6-popover,
+.bp6-popover-content,
+.bp6-menu,
+.bp6-menu-list {
+  font-family: var(--font-mono) !important;
+  font-size: 16px !important;
+  color: var(--text-primary) !important;
+  background-color: var(--bg-primary) !important;
+}
+
+.bp6-menu-item {
+  font-family: var(--font-mono) !important;
+  font-size: 16px !important;
+  color: var(--text-primary) !important;
+  background-color: transparent !important;
+}
+
+.bp6-menu-item:hover,
+.bp6-menu-item:focus {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+.bp6-menu-item-active {
+  background-color: var(--accent-primary) !important;
+  color: var(--bg-primary) !important;
+}
+
+.bp6-menu-item-label {
+  color: var(--text-primary) !important;
+}
+
+.bp6-divider {
+  background-color: var(--border-color) !important;
+}

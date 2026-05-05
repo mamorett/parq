@@ -78,7 +78,6 @@ function App() {
           <Navbar.Divider />
           {parquets && parquets.length > 1 && (
             <>
-              <span style={{ color: 'var(--text-secondary)', fontSize: '13px', marginRight: '4px' }}>File:</span>
               {parquetSelect}
               <Navbar.Divider />
             </>
