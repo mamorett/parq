@@ -2,10 +2,10 @@ import { Drawer, H5, Divider, Classes, Text } from '@blueprintjs/core';
 import { useQuery } from '@tanstack/react-query';
 import { fetchStats } from '../api';
 
-export function StatsDrawer({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
+export function StatsDrawer({ isOpen, onClose, parquetName }: { isOpen: boolean, onClose: () => void; parquetName?: string }) {
   const { data: stats, isLoading } = useQuery({
-    queryKey: ['stats'],
-    queryFn: fetchStats,
+    queryKey: ['stats', parquetName || 'default'],
+    queryFn: () => fetchStats(parquetName),
     enabled: isOpen,
   });
 

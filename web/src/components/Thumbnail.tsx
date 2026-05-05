@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { Spinner, Icon } from '@blueprintjs/core';
 import { getThumbnailUrl } from '../api';
 
-export function Thumbnail({ index, column }: { index: number; column?: string }) {
+export function Thumbnail({ index, column, parquetName }: { index: number; column?: string; parquetName?: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const url = getThumbnailUrl(index, column);
+  const url = getThumbnailUrl(index, column, parquetName);
 
   return (
     <div style={{

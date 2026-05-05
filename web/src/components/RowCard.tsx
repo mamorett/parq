@@ -6,11 +6,11 @@ import { getDownloadUrl, getFileUrl } from '../api';
 import { formatDate } from '../utils';
 import { useUpdateRow } from '../hooks/useUpdateRow';
 
-export function RowCard({ row, schema }: { row: Row; schema: Config }) {
+export function RowCard({ row, schema, parquetName }: { row: Row; schema: Config; parquetName?: string }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedValues, setEditedValues] = useState<Record<string, any>>({});
-  const updateRowMutation = useUpdateRow();
+  const updateRowMutation = useUpdateRow(parquetName);
   const thumbnailCol = schema.thumbnail.column;
 
   const copyToClipboard = (text: string) => {
@@ -65,14 +65,14 @@ export function RowCard({ row, schema }: { row: Row; schema: Config }) {
       >
         <div style={{ display: 'flex', gap: '2rem' }}>
           <div style={{ width: '180px', flexShrink: 0 }}>
-            <Thumbnail index={row.index} column={thumbnailCol} />
+            <Thumbnail index={row.index} column={thumbnailCol} parquetName={parquetName} />
           </div>
           <div style={{ flex: 1, overflow: 'hidden', textAlign: 'left' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
               <H5 style={{ color: 'var(--accent-primary)', margin: 0, textAlign: 'left' }}>Row #{row.index}</H5>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <Button icon="maximize" minimal small onClick={(e) => { e.stopPropagation(); setIsOpen(true); }} />
-                <Button icon="download" minimal small onClick={(e) => { e.stopPropagation(); window.open(getDownloadUrl(row.index)); }} />
+                <Button icon="download" minimal small onClick={(e) => { e.stopPropagation(); window.open(getDownloadUrl(row.index, parquetName)); }} />
               </div>
             </div>
 
@@ -117,9 +117,9 @@ export function RowCard({ row, schema }: { row: Row; schema: Config }) {
         <div className={Classes.DIALOG_BODY} style={{ color: 'var(--text-primary)', textAlign: 'left' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
             <div style={{ textAlign: 'left' }}>
-              <a href={getFileUrl(row.index, thumbnailCol)} target="_blank" rel="noreferrer">
+              <a href={getFileUrl(row.index, thumbnailCol, parquetName)} target="_blank" rel="noreferrer">
                 <img
-                  src={getFileUrl(row.index, thumbnailCol)}
+                  src={getFileUrl(row.index, thumbnailCol, parquetName)}
                   alt="Full Res"
                   className="detail-dialog-img"
                 />
@@ -144,7 +144,7 @@ export function RowCard({ row, schema }: { row: Row; schema: Config }) {
                 <Text style={{ color: 'var(--text-muted)', textAlign: 'left' }}>No image properties available.</Text>
               )}
             </div>
-            
+
             <div style={{ overflow: 'auto' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
                 <H5 style={{ color: 'var(--accent-primary)', margin: 0, textAlign: 'left' }}>Metadata</H5>
@@ -186,8 +186,8 @@ export function RowCard({ row, schema }: { row: Row; schema: Config }) {
         <div className={Classes.DIALOG_FOOTER}>
           <div className={Classes.DIALOG_FOOTER_ACTIONS}>
             {isEditing && (
-              <Button 
-                intent={Intent.SUCCESS} 
+              <Button
+                intent={Intent.SUCCESS}
                 onClick={handleSaveClick}
                 loading={updateRowMutation.isPending}
               >

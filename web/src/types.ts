@@ -6,6 +6,19 @@ export interface Config {
   thumbnail: ThumbnailConfig;
 }
 
+export interface ParquetEntry {
+  path: string;
+  name: string;
+  columns?: ColumnDef[];
+  default_sort?: SortDef;
+  pagination?: Pagination;
+  thumbnail?: ThumbnailConfig;
+}
+
+export interface MultiConfig {
+  parquets: ParquetEntry[];
+}
+
 export interface ColumnDef {
   name: string;
   type: 'string' | 'int' | 'blob' | 'path';

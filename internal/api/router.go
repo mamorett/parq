@@ -12,18 +12,26 @@ import (
 )
 
 type Server struct {
-	store    store.RowStore
-	cfg      *config.Config
+	store    *store.MultiStore
+	cfg      *config.Config // single config for backward compat (first/default parquet)
+	multiCfg *config.MultiConfig
 	static   string
 	basePath string
 }
 
-func NewRouter(s store.RowStore, cfg *config.Config, staticDir, corsOrigins, basePath string) http.Handler {
+func NewRouter(ms *store.MultiStore, mc *config.MultiConfig, staticDir, corsOrigins, basePath string) http.Handler {
 	srv := &Server{
-		store:    s,
-		cfg:      cfg,
+		store:    ms,
+		multiCfg: mc,
 		static:   staticDir,
 		basePath: basePath,
+	}
+
+	// Set default config to first parquet (for backward compat)
+	if len(mc.Parquets) > 0 {
+		if cfg, err := mc.Parquets[0].Resolve(); err == nil {
+			srv.cfg = cfg
+		}
 	}
 
 	mux := http.NewServeMux()
@@ -40,6 +48,7 @@ func NewRouter(s store.RowStore, cfg *config.Config, staticDir, corsOrigins, bas
 	mux.HandleFunc("GET /api/file", srv.handleGetFile)
 	mux.HandleFunc("GET /api/rows/{idx}/download", srv.handleDownload)
 	mux.HandleFunc("POST /api/discover", srv.handleDiscover)
+	mux.HandleFunc("GET /api/parquets", srv.handleGetParquets)
 
 	// Static files
 	mux.HandleFunc("/", srv.handleStatic)
@@ -53,18 +62,69 @@ func NewRouter(s store.RowStore, cfg *config.Config, staticDir, corsOrigins, bas
 	return c.Handler(mux)
 }
 
+// getStoreAndConfig extracts the store and config for a given parquet name
+func (s *Server) getStoreAndConfig(name string) (*store.MemoryStore, *config.Config, error) {
+	store, err := s.store.StoreFor(name)
+	if err != nil {
+		return nil, nil, err
+	}
+	cfg, err := s.store.GetConfig(name)
+	if err != nil {
+		return nil, nil, err
+	}
+	return store, cfg, nil
+}
+
 func (s *Server) handleGetSchema(w http.ResponseWriter, r *http.Request) {
+	name := r.URL.Query().Get("parquet")
+	if name == "" {
+		// Return first/default config
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(s.cfg)
+		return
+	}
+
+	cfg, err := s.store.GetConfig(name)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(s.cfg)
+	json.NewEncoder(w).Encode(cfg)
 }
 
 func (s *Server) handleGetMeta(w http.ResponseWriter, r *http.Request) {
+	name := r.URL.Query().Get("parquet")
+	if name == "" {
+		name = s.store.StoreNames()[0]
+	}
+
+	store, err := s.store.StoreFor(name)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	cfg, err := s.store.GetConfig(name)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	stats, _ := store.Stats()
 	w.Header().Set("Content-Type", "application/json")
-	stats, _ := s.store.Stats()
 	json.NewEncoder(w).Encode(map[string]any{
 		"status": "ok",
 		"stats":  stats,
-		"config": s.cfg,
+		"config": cfg,
+	})
+}
+
+func (s *Server) handleGetParquets(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]any{
+		"parquets": s.store.StoreNames(),
 	})
 }
 

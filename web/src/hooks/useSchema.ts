@@ -1,9 +1,16 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchSchema } from '../api';
+import { fetchSchema, fetchParquets } from '../api';
 
-export function useSchema() {
+export function useSchema(parquetName?: string) {
   return useQuery({
-    queryKey: ['schema'],
-    queryFn: fetchSchema,
+    queryKey: ['schema', parquetName || 'default'],
+    queryFn: () => fetchSchema(parquetName),
+  });
+}
+
+export function useParquets() {
+  return useQuery({
+    queryKey: ['parquets'],
+    queryFn: fetchParquets,
   });
 }

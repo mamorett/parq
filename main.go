@@ -7,6 +7,8 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/trithemius/parq/internal/api"
 	"github.com/trithemius/parq/internal/config"
@@ -15,49 +17,90 @@ import (
 )
 
 func main() {
-	addr := flag.String("addr", ":8080", "listen address")
-	schemaPath := flag.String("schema", "./schema.json", "path to schema.json")
-	parquetPath := flag.String("parquet", "", "override parquet_file from schema.json")
-	basePath := flag.String("base-path", "/", "URL prefix for reverse-proxy support")
-	staticDir := flag.String("static-dir", "./web/dist", "path to React build")
-	corsOrigins := flag.String("cors-origins", "*", "allowed CORS origins")
-	autoDiscover := flag.Bool("auto-discover", false, "generate schema.json if it doesn't exist")
-
-	flag.Parse()
-
-	// Subcommand handle
-	if flag.Arg(0) == "discover" {
+	// Check for subcommand before defining flags
+	if len(os.Args) > 1 && os.Args[1] == "discover" {
 		handleDiscover()
 		return
 	}
+
+	addr := flag.String("addr", ":8080", "listen address")
+	schemaPath := flag.String("schema", "./schema.json", "path to schema.json (legacy)")
+	configPath := flag.String("config", "./parqs.json", "path to parqs.json (multi-parquet config)")
+	parquetPath := flag.String("parquet-file", "", "path to a single parquet file (for auto-discover mode)")
+	basePath := flag.String("base-path", "/", "URL prefix for reverse-proxy support")
+	staticDir := flag.String("static-dir", "./web/dist", "path to React build")
+	corsOrigins := flag.String("cors-origins", "*", "allowed CORS origins")
+	autoDiscover := flag.Bool("auto-discover", false, "generate parqs.json if it doesn't exist")
+
+	flag.Parse()
 
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
 
 	slog.Info("Starting Parq server", "addr", *addr)
 
-	cfg, err := config.Load(*schemaPath, *parquetPath, *autoDiscover)
+	// Try to load multi-config first, fall back to legacy schema.json
+	mc, err := config.LoadMulti(*configPath)
 	if err != nil {
-		slog.Error("Failed to load config", "error", err)
-		os.Exit(1)
+		if os.IsNotExist(err) && *schemaPath != "./schema.json" {
+			// User specified a custom schema path, try legacy load
+			mc, err = config.LoadLegacy(*schemaPath, *parquetPath, *autoDiscover)
+		} else if os.IsNotExist(err) && *autoDiscover {
+			// Auto-discover mode: create a single entry from --parquet-file
+			if *parquetPath == "" {
+				slog.Error("Auto-discover requires -parquet-file flag")
+				os.Exit(1)
+			}
+			discovered, err := config.Discover(*parquetPath)
+			if err != nil {
+				slog.Error("Failed to discover parquet", "error", err)
+				os.Exit(1)
+			}
+			base := filepath.Base(*parquetPath)
+			name := strings.TrimSuffix(base, filepath.Ext(base))
+			mc = &config.MultiConfig{
+				Parquets: []config.ParquetEntry{
+					{
+						Path:    *parquetPath,
+						Name:    name,
+						Columns: discovered.Columns,
+					},
+				},
+			}
+			// Save the generated config
+			if err := saveMultiConfig(mc, *configPath); err != nil {
+				slog.Error("Failed to save auto-generated config", "error", err)
+			}
+		} else if os.IsNotExist(err) {
+			// Try legacy schema.json as fallback
+			mc, err = config.LoadLegacy(*schemaPath, *parquetPath, false)
+		}
+		if err != nil {
+			slog.Error("Failed to load config", "error", err)
+			os.Exit(1)
+		}
 	}
 
-	dataStore, err := store.NewMemoryStore(cfg)
+	dataStore, err := store.NewMultiStore(mc)
 	if err != nil {
 		slog.Error("Failed to initialize store", "error", err)
 		os.Exit(1)
 	}
 
-	// Watch for changes
-	if err := watcher.Watch(cfg.ParquetFile, func() {
-		if err := dataStore.Reload(); err != nil {
-			slog.Error("Failed to reload store", "error", err)
+	// Watch for changes in all parquet files
+	var parquetPaths []string
+	for _, entry := range mc.Parquets {
+		parquetPaths = append(parquetPaths, entry.Path)
+	}
+	if err := watcher.WatchMany(parquetPaths, func(name string) {
+		if err := dataStore.Reload(name); err != nil {
+			slog.Error("Failed to reload store", "name", name, "error", err)
 		}
 	}); err != nil {
 		slog.Error("Failed to start watcher", "error", err)
 	}
 
-	router := api.NewRouter(dataStore, cfg, *staticDir, *corsOrigins, *basePath)
+	router := api.NewRouter(dataStore, mc, *staticDir, *corsOrigins, *basePath)
 
 	server := &http.Server{
 		Addr:    *addr,
@@ -71,28 +114,98 @@ func main() {
 }
 
 func handleDiscover() {
-	parquetPath := flag.String("parquet", "", "path to parquet file")
-	outputPath := flag.String("output", "", "where to write schema.json (default: stdout)")
+	var parquetPaths []string
+	dirPath := flag.String("dir", "", "directory to scan for *.parquet files")
+	outputPath := flag.String("output", "", "where to write parqs.json (default: stdout)")
+
+	// Parse repeatable --parquet flags
+	mf := &multiStringFlag{&parquetPaths}
+	flag.Var(mf, "parquet", "path to a parquet file (repeatable)")
+	
+	// Parse flags starting from os.Args[2] (skip program name and "discover" subcommand)
 	flag.CommandLine.Parse(os.Args[2:])
 
-	if *parquetPath == "" {
-		fmt.Println("Error: -parquet is required")
+	// Collect parquet files
+	var files []string
+
+	if *dirPath != "" {
+		// Scan directory for .parquet files
+		entries, err := os.ReadDir(*dirPath)
+		if err != nil {
+			fmt.Printf("Error reading directory: %v\n", err)
+			os.Exit(1)
+		}
+		for _, entry := range entries {
+			if !entry.IsDir() && strings.HasSuffix(strings.ToLower(entry.Name()), ".parquet") {
+				files = append(files, filepath.Join(*dirPath, entry.Name()))
+			}
+		}
+	}
+
+	// Add explicit --parquet paths
+	files = append(files, parquetPaths...)
+
+	if len(files) == 0 {
+		fmt.Println("Error: --parquet or --dir is required")
 		os.Exit(1)
 	}
 
-	cfg, err := config.Discover(*parquetPath)
-	if err != nil {
-		fmt.Printf("Error: %v\n", err)
-		os.Exit(1)
+	// Discover each file
+	var entries []config.ParquetEntry
+	for _, path := range files {
+		cfg, err := config.Discover(path)
+		if err != nil {
+			fmt.Printf("Error discovering %s: %v\n", path, err)
+			os.Exit(1)
+		}
+		base := filepath.Base(path)
+		name := strings.TrimSuffix(base, filepath.Ext(base))
+		entries = append(entries, config.ParquetEntry{
+			Path:   path,
+			Name:   name,
+			Columns: cfg.Columns,
+		})
 	}
+
+	mc := &config.MultiConfig{Parquets: entries}
 
 	if *outputPath != "" {
-		if err := cfg.Save(*outputPath); err != nil {
+		if err := saveMultiConfig(mc, *outputPath); err != nil {
 			fmt.Printf("Error saving: %v\n", err)
 			os.Exit(1)
 		}
 	} else {
-		data, _ := json.MarshalIndent(cfg, "", "  ")
+		data, _ := json.MarshalIndent(mc, "", "  ")
 		fmt.Println(string(data))
 	}
+}
+
+// multiStringFlag allows repeatable flag usage: --parquet a.parquet --parquet b.parquet
+type multiStringFlag struct {
+	values *[]string
+}
+
+func (m *multiStringFlag) String() string {
+	if m == nil || m.values == nil || *m.values == nil {
+		return ""
+	}
+	return strings.Join(*m.values, ",")
+}
+
+func (m *multiStringFlag) Set(value string) error {
+	*m.values = append(*m.values, value)
+	return nil
+}
+
+// saveMultiConfig saves a MultiConfig to a file
+func saveMultiConfig(mc *config.MultiConfig, path string) error {
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	enc := json.NewEncoder(f)
+	enc.SetIndent("", "  ")
+	return enc.Encode(mc)
 }

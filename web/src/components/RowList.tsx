@@ -5,9 +5,9 @@ import { RowCard } from './RowCard';
 import { PaginationBar } from './PaginationBar';
 import { NonIdealState, Spinner } from '@blueprintjs/core';
 
-export function RowList({ schema }: { schema: Config }) {
+export function RowList({ schema, parquetName }: { schema: Config; parquetName?: string }) {
   const { state } = useUrlState();
-  const { data, isLoading, error } = useRows(state);
+  const { data, isLoading, error } = useRows({ ...state, parquet: parquetName });
 
   if (isLoading) {
     return <div style={{ padding: '2rem', textAlign: 'center' }}><Spinner /></div>;
@@ -26,7 +26,7 @@ export function RowList({ schema }: { schema: Config }) {
       <PaginationBar total={data.total} />
       <div className="row-card-list" style={{ margin: '1rem 0' }}>
         {data.rows.map(row => (
-          <RowCard key={row.index} row={row} schema={schema} />
+          <RowCard key={row.index} row={row} schema={schema} parquetName={parquetName} />
         ))}
       </div>
       <PaginationBar total={data.total} />

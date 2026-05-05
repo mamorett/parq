@@ -3,7 +3,7 @@ import { Sidebar } from './Sidebar';
 import { RowList } from './RowList';
 import { useUrlState } from '../hooks/useUrlState';
 
-export function Layout({ schema }: { schema: Config }) {
+export function Layout({ schema, parquetName }: { schema: Config; parquetName?: string }) {
   const { state } = useUrlState();
 
   return (
@@ -12,7 +12,7 @@ export function Layout({ schema }: { schema: Config }) {
         <Sidebar schema={schema} />
       </div>
       <div className="main-content">
-        {state.size > 0 && <RowList schema={schema} />}
+        {state.size > 0 && <RowList schema={schema} parquetName={parquetName} />}
       </div>
     </div>
   );

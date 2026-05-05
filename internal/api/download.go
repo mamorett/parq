@@ -8,6 +8,20 @@ import (
 )
 
 func (s *Server) handleDownload(w http.ResponseWriter, r *http.Request) {
+	name := r.URL.Query().Get("parquet")
+	if name == "" {
+		names := s.store.StoreNames()
+		if len(names) > 0 {
+			name = names[0]
+		}
+	}
+
+	store, err := s.store.StoreFor(name)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
 	idxStr := r.PathValue("idx")
 	idx, err := strconv.Atoi(idxStr)
 	if err != nil {
@@ -15,7 +29,7 @@ func (s *Server) handleDownload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	row, err := s.store.Get(idx)
+	row, err := store.Get(idx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return

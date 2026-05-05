@@ -235,6 +235,11 @@ func (s *MemoryStore) Close() error {
 	return nil
 }
 
+// GetConfig returns the config for this store
+func (s *MemoryStore) GetConfig() *config.Config {
+	return s.cfg
+}
+
 func (s *MemoryStore) matches(r map[string]any, f Filter) bool {
 	if f.Search != "" {
 		match := false

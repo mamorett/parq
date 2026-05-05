@@ -10,9 +10,9 @@ export function Sidebar({ schema }: { schema: Config }) {
     <div>
       <H6 style={{ color: 'var(--accent-primary)' }}>Search</H6>
       <SearchBar schema={schema} />
-      
+
       <Divider style={{ margin: '1rem 0' }} />
-      
+
       <FormGroup label="Sort By" labelFor="sort-select">
         <HTMLSelect
           id="sort-select"
