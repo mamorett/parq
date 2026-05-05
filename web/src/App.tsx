@@ -57,23 +57,17 @@ function App() {
   }
 
   const parquetSelect = (
-    <Select
+    <Select<string>
       items={parquets || []}
       itemRenderer={(item, { handleClick, modifiers }) => {
         if (!modifiers.matchesPredicate) return null;
-        return (
-          <MenuItem
-            key={item}
-            text={item}
-            active={item === activeParquet}
-            onClick={handleClick}
-          />
-        );
+        return <MenuItem key={item} text={item} active={item === activeParquet} onClick={handleClick} />;
       }}
-      onItemSelect={(item) => setActiveParquet(item as string)}
-      activeItem={activeParquet}
-      fill={false}
-    />
+      onItemSelect={(item) => setActiveParquet(item)}
+      popoverProps={{ minimal: true }}
+    >
+      <Button minimal small text={activeParquet || 'Select file'} icon="database" />
+    </Select>
   );
 
   return (
@@ -84,7 +78,7 @@ function App() {
           <Navbar.Divider />
           {parquets && parquets.length > 1 && (
             <>
-              <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>File:</span>
+              <span style={{ color: 'var(--text-secondary)', fontSize: '13px', marginRight: '4px' }}>File:</span>
               {parquetSelect}
               <Navbar.Divider />
             </>

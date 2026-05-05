@@ -12,7 +12,7 @@ export function Layout({ schema, parquetName }: { schema: Config; parquetName?: 
         <Sidebar schema={schema} />
       </div>
       <div className="main-content">
-        {state.size > 0 && <RowList schema={schema} parquetName={parquetName} />}
+        {state.size > 0 && <RowList schema={schema} parquetName={parquetName || undefined} />}
       </div>
     </div>
   );

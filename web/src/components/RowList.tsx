@@ -7,7 +7,7 @@ import { NonIdealState, Spinner } from '@blueprintjs/core';
 
 export function RowList({ schema, parquetName }: { schema: Config; parquetName?: string }) {
   const { state } = useUrlState();
-  const { data, isLoading, error } = useRows({ ...state, parquet: parquetName });
+  const { data, isLoading, error } = useRows({ ...state, parquet: parquetName || undefined });
 
   if (isLoading) {
     return <div style={{ padding: '2rem', textAlign: 'center' }}><Spinner /></div>;
