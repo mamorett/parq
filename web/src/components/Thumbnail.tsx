@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Spinner, Icon } from '@blueprintjs/core';
 import { getThumbnailUrl } from '../api';
 
@@ -6,6 +6,12 @@ export function Thumbnail({ index, column, parquetName }: { index: number; colum
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const url = getThumbnailUrl(index, column, parquetName);
+
+  // Reset loading state when parquet or URL changes
+  useEffect(() => {
+    setLoading(true);
+    setError(false);
+  }, [url]);
 
   return (
     <div style={{
@@ -24,6 +30,7 @@ export function Thumbnail({ index, column, parquetName }: { index: number; colum
         <Icon icon="error" size={40} style={{ color: 'var(--text-muted)' }} />
       ) : (
         <img
+          key={url}
           src={url}
           alt={`Row ${index}`}
           style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: loading ? 0 : 1, transition: 'opacity 0.2s' }}
