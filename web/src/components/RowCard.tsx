@@ -41,6 +41,9 @@ export function RowCard({ row, schema, parquetName }: { row: Row; schema: Config
     );
   };
 
+  const isLargeField = (name: string) =>
+    ['image_path', 'prompt', 'description', 'created_at', 'modified_at'].includes(name);
+
   const FieldRow = ({ col, value }: { col: any, value: any }) => (
     <div className="field-row">
       <b style={{ color: 'var(--accent-secondary)', minWidth: '120px' }}>{col.label}:</b>
@@ -157,7 +160,7 @@ export function RowCard({ row, schema, parquetName }: { row: Row; schema: Config
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                 {schema.columns.map(col => (
                   <div key={col.name} style={{ marginBottom: '0.75rem' }}>
-                    <div style={{ color: 'var(--accent-secondary)', fontWeight: 'bold', fontSize: '0.85rem', marginBottom: '0.2rem', textAlign: 'left' }}>{col.label}</div>
+                    <div style={{ color: 'var(--accent-secondary)', fontWeight: 'bold', fontSize: isLargeField(col.name) ? '1rem' : '0.85rem', marginBottom: '0.2rem', textAlign: 'left' }}>{col.label}</div>
                     {isEditing && col.editable ? (
                       <InputGroup
                         value={editedValues[col.name] ?? ''}
@@ -166,7 +169,7 @@ export function RowCard({ row, schema, parquetName }: { row: Row; schema: Config
                       />
                     ) : (
                       <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', backgroundColor: 'var(--bg-secondary)', padding: '0.5rem', borderRadius: '4px' }}>
-                        <div style={{ color: 'var(--text-secondary)', wordBreak: 'break-all', flex: 1, textAlign: 'left', fontFamily: 'var(--font-serif)' }}>
+                        <div style={{ color: 'var(--text-secondary)', wordBreak: 'break-all', flex: 1, textAlign: 'left', fontFamily: 'var(--font-serif)', fontSize: isLargeField(col.name) ? '1rem' : undefined }}>
                           {formatValue(col, row.columns[col.name])}
                         </div>
                         <Button
