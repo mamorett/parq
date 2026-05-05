@@ -26,7 +26,12 @@ func main() {
 	addr := flag.String("addr", ":8080", "listen address")
 	schemaPath := flag.String("schema", "./schema.json", "path to schema.json (legacy)")
 	configPath := flag.String("config", "./parqs.json", "path to parqs.json (multi-parquet config)")
-	parquetPath := flag.String("parquet-file", "", "path to a single parquet file (for auto-discover mode)")
+	
+	// Repeatable --parquet flags for server mode
+	var parquetPaths []string
+	mf := &multiStringFlag{&parquetPaths}
+	flag.Var(mf, "parquet", "path to a parquet file (repeatable)")
+	
 	basePath := flag.String("base-path", "/", "URL prefix for reverse-proxy support")
 	staticDir := flag.String("static-dir", "./web/dist", "path to React build")
 	corsOrigins := flag.String("cors-origins", "*", "allowed CORS origins")
@@ -39,41 +44,71 @@ func main() {
 
 	slog.Info("Starting Parq server", "addr", *addr)
 
+	// If --parquet flags were provided, use them to create a MultiConfig
+	if len(parquetPaths) > 0 {
+		var entries []config.ParquetEntry
+		for _, path := range parquetPaths {
+			discovered, err := config.Discover(path)
+			if err != nil {
+				slog.Error("Failed to discover parquet", "path", path, "error", err)
+				os.Exit(1)
+			}
+			base := filepath.Base(path)
+			name := strings.TrimSuffix(base, filepath.Ext(base))
+			entries = append(entries, config.ParquetEntry{
+				Path:    path,
+				Name:    name,
+				Columns: discovered.Columns,
+			})
+		}
+		mc := &config.MultiConfig{Parquets: entries}
+
+		dataStore, err := store.NewMultiStore(mc)
+		if err != nil {
+			slog.Error("Failed to initialize store", "error", err)
+			os.Exit(1)
+		}
+
+		// Watch for changes in all parquet files
+		var storeParquetPaths []string
+		for _, entry := range mc.Parquets {
+			storeParquetPaths = append(storeParquetPaths, entry.Path)
+		}
+		if err := watcher.WatchMany(storeParquetPaths, func(name string) {
+			if err := dataStore.Reload(name); err != nil {
+				slog.Error("Failed to reload store", "name", name, "error", err)
+			}
+		}); err != nil {
+			slog.Error("Failed to start watcher", "error", err)
+		}
+
+		router := api.NewRouter(dataStore, mc, *staticDir, *corsOrigins, *basePath)
+
+		server := &http.Server{
+			Addr:    *addr,
+			Handler: router,
+		}
+
+		if err := server.ListenAndServe(); err != nil {
+			slog.Error("Server failed", "error", err)
+			os.Exit(1)
+		}
+		return
+	}
+
 	// Try to load multi-config first, fall back to legacy schema.json
 	mc, err := config.LoadMulti(*configPath)
 	if err != nil {
 		if os.IsNotExist(err) && *schemaPath != "./schema.json" {
 			// User specified a custom schema path, try legacy load
-			mc, err = config.LoadLegacy(*schemaPath, *parquetPath, *autoDiscover)
+			mc, err = config.LoadLegacy(*schemaPath, "", *autoDiscover)
 		} else if os.IsNotExist(err) && *autoDiscover {
-			// Auto-discover mode: create a single entry from --parquet-file
-			if *parquetPath == "" {
-				slog.Error("Auto-discover requires -parquet-file flag")
-				os.Exit(1)
-			}
-			discovered, err := config.Discover(*parquetPath)
-			if err != nil {
-				slog.Error("Failed to discover parquet", "error", err)
-				os.Exit(1)
-			}
-			base := filepath.Base(*parquetPath)
-			name := strings.TrimSuffix(base, filepath.Ext(base))
-			mc = &config.MultiConfig{
-				Parquets: []config.ParquetEntry{
-					{
-						Path:    *parquetPath,
-						Name:    name,
-						Columns: discovered.Columns,
-					},
-				},
-			}
-			// Save the generated config
-			if err := saveMultiConfig(mc, *configPath); err != nil {
-				slog.Error("Failed to save auto-generated config", "error", err)
-			}
+			// Auto-discover mode: requires --parquet flags, already handled above
+			slog.Error("Auto-discover requires -parquet flag")
+			os.Exit(1)
 		} else if os.IsNotExist(err) {
 			// Try legacy schema.json as fallback
-			mc, err = config.LoadLegacy(*schemaPath, *parquetPath, false)
+			mc, err = config.LoadLegacy(*schemaPath, "", false)
 		}
 		if err != nil {
 			slog.Error("Failed to load config", "error", err)
@@ -88,11 +123,11 @@ func main() {
 	}
 
 	// Watch for changes in all parquet files
-	var parquetPaths []string
+	var storeParquetPaths []string
 	for _, entry := range mc.Parquets {
-		parquetPaths = append(parquetPaths, entry.Path)
+		storeParquetPaths = append(storeParquetPaths, entry.Path)
 	}
-	if err := watcher.WatchMany(parquetPaths, func(name string) {
+	if err := watcher.WatchMany(storeParquetPaths, func(name string) {
 		if err := dataStore.Reload(name); err != nil {
 			slog.Error("Failed to reload store", "name", name, "error", err)
 		}
