@@ -105,3 +105,33 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+/* Style HTMLSelect elements to match theme */
+select {
+  font-family: var(--sans);
+  font-size: 16px;
+  color: var(--text-h);
+  background-color: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+select:hover {
+  border-color: var(--accent-border);
+}
+
+select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-bg);
+}
+
+select option {
+  font-family: var(--sans);
+  font-size: 16px;
+  color: var(--text-h);
+  background-color: var(--bg);
+}
