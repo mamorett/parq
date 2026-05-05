@@ -1,28 +1,7 @@
-import { FormGroup, H6, Divider, MenuItem } from '@blueprintjs/core';
-import { Select } from '@blueprintjs/select';
+import { FormGroup, HTMLSelect, H6, Divider } from '@blueprintjs/core';
 import type { Config } from '../types';
 import { SearchBar } from './SearchBar';
 import { useUrlState } from '../hooks/useUrlState';
-
-type SelectItem = { value: string; label: string };
-
-function createSelect(items: SelectItem[], value: string, onChange: (v: string) => void) {
-  return (
-    <Select<SelectItem>
-      items={items}
-      itemRenderer={(item, { handleClick, modifiers }) => {
-        if (!modifiers.matchesPredicate) return null;
-        return <MenuItem key={item.value} text={item.label} active={item.value === value} onClick={handleClick} />;
-      }}
-      onItemSelect={(item) => onChange(item.value)}
-      popoverProps={{ minimal: true }}
-    >
-      <button className="bp5-select bp5-button bp5-fill" type="button" style={{ textAlign: 'left', justifyContent: 'flex-start' }}>
-        {items.find(i => i.value === value)?.label || items[0]?.label}
-      </button>
-    </Select>
-  );
-}
 
 export function Sidebar({ schema }: { schema: Config }) {
   const { state, updateState } = useUrlState();
@@ -35,29 +14,41 @@ export function Sidebar({ schema }: { schema: Config }) {
       <Divider style={{ margin: '1rem 0' }} />
 
       <FormGroup label="Sort By" labelFor="sort-select">
-        {createSelect(
-          schema.columns.filter(c => c.sortable).map(c => ({ value: c.name, label: c.label })),
-          state.sort || schema.default_sort.column,
-          (v) => updateState({ sort: v })
-        )}
+        <HTMLSelect
+          id="sort-select"
+          fill
+          value={state.sort || schema.default_sort.column}
+          onChange={(e) => updateState({ sort: e.target.value })}
+        >
+          {schema.columns.filter(c => c.sortable).map(c => (
+            <option key={c.name} value={c.name}>{c.label}</option>
+          ))}
+        </HTMLSelect>
       </FormGroup>
 
       <FormGroup label="Order">
-        {createSelect(
-          [{ value: 'asc', label: 'Ascending' }, { value: 'desc', label: 'Descending' }],
-          state.order || schema.default_sort.order,
-          (v) => updateState({ order: v as 'asc' | 'desc' })
-        )}
+        <HTMLSelect
+          fill
+          value={state.order || schema.default_sort.order}
+          onChange={(e) => updateState({ order: e.target.value as 'asc' | 'desc' })}
+        >
+          <option value="asc">Ascending</option>
+          <option value="desc">Descending</option>
+        </HTMLSelect>
       </FormGroup>
 
       <Divider style={{ margin: '1rem 0' }} />
 
       <FormGroup label="Page Size">
-        {createSelect(
-          schema.pagination.page_size_options.map(s => ({ value: String(s), label: String(s) })),
-          String(state.size),
-          (v) => updateState({ size: parseInt(v, 10), page: 1 })
-        )}
+        <HTMLSelect
+          fill
+          value={state.size}
+          onChange={(e) => updateState({ size: parseInt(e.target.value, 10), page: 1 })}
+        >
+          {schema.pagination.page_size_options.map(s => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </HTMLSelect>
       </FormGroup>
     </div>
   );
