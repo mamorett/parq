@@ -13,6 +13,7 @@
 - **📂 Multi-File Support**: Browse multiple Parquet files from a single server instance with a file switcher in the UI.
 - **🛠️ Batch Config Generator**: `parq discover --dir /data/` scans a directory and generates `parqs.json` for all Parquet files at once.
 - **🔍 Smart Autodiscovery**: Point it at any Parquet file and it will automatically guess column types, identify path columns, and detect datetime formats.
+- **📁 Directory Autodiscovery**: Run without a config file and Parq will automatically scan the current directory for all `.parquet` files.
 - **🖼️ Media Probing**: Automatically extracts image dimensions, aspect ratios, and file sizes from path columns.
 - **⚡ Fast Search & Filter**: Substring search across all columns, exact filters, and subdirectory-based path filtering.
 - **📝 Inline Editing**: Edit string columns directly in the UI and persist changes back to the original Parquet file.
@@ -31,13 +32,21 @@ docker run -p 8080:8080 \
   -config /data/parqs.json
 ```
 
-Or let it scan and auto-generate config on startup:
+If `parqs.json` doesn't exist, Parq will automatically scan `/data` for all `.parquet` files:
+
+```bash
+docker run -p 8080:8080 \
+  -v /path/to/your/data:/data \
+  trithemius/parq
+```
+
+Or use `-parquet-dir` to specify a different scan directory:
 
 ```bash
 docker run -p 8080:8080 \
   -v /path/to/your/data:/data \
   trithemius/parq \
-  -auto-discover -parquet /data/your_file.parquet
+  -parquet-dir /data
 ```
 
 Visit `http://localhost:8080` and you're ready to go!
@@ -175,6 +184,7 @@ parq discover --parquet /data/a.parquet --parquet /data/b.parquet
 | `-cors-origins` | `*` | Allowed CORS origins |
 | `-auto-discover` | `false` | Generate `parqs.json` on startup if missing |
 | `-parquet` | — | Single parquet file path (used with `-auto-discover`) |
+| `-parquet-dir` | — | Directory to scan for all `.parquet` files (autodiscovery) |
 
 ## 📄 License
 
