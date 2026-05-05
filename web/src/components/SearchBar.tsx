@@ -28,6 +28,11 @@ export function SearchBar({ schema }: { schema: Config }) {
     return () => clearTimeout(timer);
   }, [localSearch, state.search, updateState]);
 
+  const handleClearSearch = () => {
+    setLocalSearch('');
+    updateState({ search: '', page: 1 });
+  };
+
   return (
     <ControlGroup fill vertical>
       <Select<SearchColumn>
@@ -51,6 +56,11 @@ export function SearchBar({ schema }: { schema: Config }) {
             updateState({ search: localSearch, page: 1 });
           }
         }}
+        rightElement={
+          localSearch ? (
+            <Button minimal small icon="cross" onClick={handleClearSearch} style={{ marginRight: '4px' }} />
+          ) : undefined
+        }
       />
     </ControlGroup>
   );

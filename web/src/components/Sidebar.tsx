@@ -20,9 +20,9 @@ export function Sidebar({ schema }: { schema: Config }) {
     label: c.label,
   }));
 
-  const currentSort = state.sort || schema.default_sort.column;
-  const currentOrder = state.order || schema.default_sort.order;
-  const currentSize = state.size;
+  const currentSort = state.sort || schema.default_sort.column || (sortColumns.length > 0 ? sortColumns[0].name : '');
+  const currentOrder = state.order || schema.default_sort.order || 'asc';
+  const currentSize = state.size || schema.pagination.default_page_size;
 
   return (
     <div>
