@@ -26,16 +26,17 @@ func main() {
 	addr := flag.String("addr", ":8080", "listen address")
 	schemaPath := flag.String("schema", "./schema.json", "path to schema.json (legacy)")
 	configPath := flag.String("config", "./parqs.json", "path to parqs.json (multi-parquet config)")
-	
+
 	// Repeatable --parquet flags for server mode
 	var parquetPaths []string
 	mf := &multiStringFlag{&parquetPaths}
 	flag.Var(mf, "parquet", "path to a parquet file (repeatable)")
-	
+
 	basePath := flag.String("base-path", "/", "URL prefix for reverse-proxy support")
 	staticDir := flag.String("static-dir", "./web/dist", "path to React build")
 	corsOrigins := flag.String("cors-origins", "*", "allowed CORS origins")
 	autoDiscover := flag.Bool("auto-discover", false, "generate parqs.json if it doesn't exist")
+	parquetDir := flag.String("parquet-dir", "", "directory to scan for all .parquet files (autodiscovery)")
 
 	flag.Parse()
 
@@ -43,6 +44,35 @@ func main() {
 	slog.SetDefault(logger)
 
 	slog.Info("Starting Parq server", "addr", *addr)
+
+	// Helper function to scan directory for parquet files
+	scanParquetDir := func(dir string) ([]string, error) {
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			return nil, err
+		}
+		var files []string
+		for _, entry := range entries {
+			if !entry.IsDir() && strings.HasSuffix(strings.ToLower(entry.Name()), ".parquet") {
+				files = append(files, filepath.Join(dir, entry.Name()))
+			}
+		}
+		return files, nil
+	}
+
+	// If --parquet-dir is provided, scan directory for all parquet files
+	if *parquetDir != "" {
+		files, err := scanParquetDir(*parquetDir)
+		if err != nil {
+			slog.Error("Failed to scan directory", "dir", *parquetDir, "error", err)
+			os.Exit(1)
+		}
+		if len(files) == 0 {
+			slog.Error("No parquet files found in directory", "dir", *parquetDir)
+			os.Exit(1)
+		}
+		parquetPaths = append(parquetPaths, files...)
+	}
 
 	// If --parquet flags were provided, use them to create a MultiConfig
 	if len(parquetPaths) > 0 {
@@ -104,12 +134,44 @@ func main() {
 			// User specified a custom schema path, try legacy load
 			mc, err = config.LoadLegacy(*schemaPath, "", *autoDiscover)
 		} else if os.IsNotExist(err) && *autoDiscover {
-			// Auto-discover mode: requires --parquet flags, already handled above
-			slog.Error("Auto-discover requires -parquet flag")
+			// Auto-discover mode: requires --parquet or --parquet-dir flags
+			slog.Error("Auto-discover requires -parquet or -parquet-dir flag")
 			os.Exit(1)
 		} else if os.IsNotExist(err) {
 			// Try legacy schema.json as fallback
 			mc, err = config.LoadLegacy(*schemaPath, "", false)
+			if err != nil && os.IsNotExist(err) {
+				// No config file found, default to autodiscovery from current directory
+				slog.Info("No config file found, scanning for parquet files in current directory")
+				files, scanErr := scanParquetDir(".")
+				if scanErr != nil {
+					slog.Error("Failed to scan directory", "dir", ".", "error", scanErr)
+					os.Exit(1)
+				}
+				if len(files) == 0 {
+					slog.Error("No parquet files found in current directory and no config file")
+					os.Exit(1)
+				}
+				// Scan complete, restart with discovered files
+				parquetPaths = files
+				var entries []config.ParquetEntry
+				for _, path := range parquetPaths {
+					discovered, err := config.Discover(path)
+					if err != nil {
+						slog.Error("Failed to discover parquet", "path", path, "error", err)
+						os.Exit(1)
+					}
+					base := filepath.Base(path)
+					name := strings.TrimSuffix(base, filepath.Ext(base))
+					entries = append(entries, config.ParquetEntry{
+						Path:      path,
+						Name:      name,
+						Columns:   discovered.Columns,
+						Thumbnail: discovered.Thumbnail,
+					})
+				}
+				mc = &config.MultiConfig{Parquets: entries}
+			}
 		}
 		if err != nil {
 			slog.Error("Failed to load config", "error", err)
