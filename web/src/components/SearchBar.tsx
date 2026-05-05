@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
-import { InputGroup, HTMLSelect, ControlGroup } from '@blueprintjs/core';
+import { InputGroup, ControlGroup, MenuItem } from '@blueprintjs/core';
+import { Select } from '@blueprintjs/select';
 import type { Config } from '../types';
 import { useUrlState } from '../hooks/useUrlState';
+
+type SelectItem = { value: string; label: string };
 
 export function SearchBar({ schema }: { schema: Config }) {
   const { state, updateState } = useUrlState();
@@ -16,17 +19,26 @@ export function SearchBar({ schema }: { schema: Config }) {
     return () => clearTimeout(timer);
   }, [localSearch, state.search, updateState]);
 
+  const searchColItems: SelectItem[] = [
+    { value: '', label: 'All Columns' },
+    ...schema.columns.filter(c => c.searchable).map(c => ({ value: c.name, label: c.label }))
+  ];
+
   return (
     <ControlGroup fill vertical>
-      <HTMLSelect
-        value={state.search_col || ''}
-        onChange={(e) => updateState({ search_col: e.target.value || undefined, page: 1 })}
+      <Select<SelectItem>
+        items={searchColItems}
+        itemRenderer={(item, { handleClick, modifiers }) => {
+          if (!modifiers.matchesPredicate) return null;
+          return <MenuItem key={item.value} text={item.label} active={item.value === state.search_col} onClick={handleClick} />;
+        }}
+        onItemSelect={(item) => updateState({ search_col: item?.value || undefined, page: 1 })}
+        popoverProps={{ minimal: true }}
       >
-        <option value="">All Columns</option>
-        {schema.columns.filter(c => c.searchable).map(c => (
-          <option key={c.name} value={c.name}>{c.label}</option>
-        ))}
-      </HTMLSelect>
+        <button className="bp5-select bp5-button bp5-fill" type="button" style={{ textAlign: 'left', justifyContent: 'flex-start' }}>
+          {searchColItems.find(i => i.value === state.search_col)?.label || 'All Columns'}
+        </button>
+      </Select>
       <InputGroup
         leftIcon="search"
         placeholder="Search term..."
