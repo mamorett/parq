@@ -22,6 +22,14 @@ export function RowCard({ row, schema, parquetName }: { row: Row; schema: Config
   const toggleMarkdown = (colName: string) =>
     setMarkdownFields(prev => ({ ...prev, [colName]: !prev[colName] }));
 
+  const isMarkdownEnabled = (colName: string, hasMarkdown: boolean) => {
+    // If no markdown detected, markdown is never enabled
+    if (!hasMarkdown) return false;
+    // Default to markdown if detected, unless explicitly toggled off
+    if (markdownFields[colName] === undefined) return true;
+    return markdownFields[colName];
+  };
+
   const formatValue = (col: any, val: any) => {
     if (val === null || val === undefined) return '';
     if (col.format === 'datetime') return formatDate(val);
@@ -204,7 +212,7 @@ export function RowCard({ row, schema, parquetName }: { row: Row; schema: Config
                   const isPath = isPathColumn(col);
                   const rawVal = formatValue(col, row.columns[col.name]);
                   const hasMarkdown = !isPath && detectMarkdown(rawVal);
-                  const useMarkdown = !isPath && markdownFields[col.name];
+                  const useMarkdown = isMarkdownEnabled(col.name, hasMarkdown);
                   return (
                     <div key={col.name} style={{ marginBottom: '0.75rem' }}>
                       <div style={{ color: 'var(--accent-secondary)', fontWeight: 'bold', fontSize: isLargeField(col.name) ? '1rem' : '0.85rem', marginBottom: '0.2rem', textAlign: 'left' }}>{col.label}</div>
