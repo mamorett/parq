@@ -241,6 +241,10 @@ label.bp6-label,
   color: var(--text-primary) !important;
 }
 
+.field-value.path-value {
+  font-family: var(--font-sans) !important;
+}
+
 /* Row numbers */
 h5[style*="color: var(--accent-primary)"] {
   font-family: var(--font-serif) !important;

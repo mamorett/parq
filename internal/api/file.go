@@ -2,7 +2,10 @@ package api
 
 import (
 	"net/http"
+	"path/filepath"
 	"strconv"
+
+	"github.com/trithemius/parq/internal/pathrewrite"
 )
 
 func (s *Server) handleGetFile(w http.ResponseWriter, r *http.Request) {
@@ -55,6 +58,27 @@ func (s *Server) handleGetFile(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		http.Error(w, "invalid path column", http.StatusBadRequest)
 		return
+	}
+
+	// Apply path rewriting if remap rules are configured for this column
+	cfg, err := s.store.GetConfig(name)
+	if err == nil {
+		for _, colDef := range cfg.Columns {
+			if colDef.Name == col && len(colDef.Remap) > 0 {
+				rewriter, err := pathrewrite.New(colDef.Remap)
+				if err == nil {
+					path = rewriter.Rewrite(path)
+				}
+				break
+			}
+		}
+	}
+
+	// Check for download mode
+	dl := q.Get("dl")
+	if dl == "1" || dl == "true" {
+		basename := filepath.Base(path)
+		w.Header().Set("Content-Disposition", "attachment; filename=\""+basename+"\"")
 	}
 
 	http.ServeFile(w, r, path)
