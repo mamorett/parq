@@ -89,6 +89,15 @@ export function getFileUrl(index: number, column?: string, parquetName?: string)
   return url.toString();
 }
 
+export function getFileDownloadUrl(index: number, column?: string, parquetName?: string): string {
+  const url = new URL(`${window.location.origin}${API_BASE}/file`);
+  url.searchParams.set('idx', index.toString());
+  if (column) url.searchParams.set('col', column);
+  if (parquetName) url.searchParams.set('parquet', parquetName);
+  url.searchParams.set('dl', '1');
+  return url.toString();
+}
+
 export function getDownloadUrl(index: number, parquetName?: string): string {
   const url = new URL(`${API_BASE}/rows/${index}/download`, window.location.origin);
   if (parquetName) url.searchParams.set('parquet', parquetName);

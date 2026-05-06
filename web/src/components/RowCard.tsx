@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Card, Elevation, H5, Text, Tag, Button, Dialog, Classes, InputGroup, Intent } from '@blueprintjs/core';
+import { Card, Elevation, H5, Text, Tag, Button, Dialog, Classes, InputGroup, Intent, Tooltip } from '@blueprintjs/core';
 import type { Row, Config } from '../types';
 import { Thumbnail } from './Thumbnail';
-import { getDownloadUrl, getFileUrl } from '../api';
+import { getDownloadUrl, getFileUrl, getFileDownloadUrl } from '../api';
 import { formatDate } from '../utils';
 import { useUpdateRow } from '../hooks/useUpdateRow';
 
@@ -44,19 +44,40 @@ export function RowCard({ row, schema, parquetName }: { row: Row; schema: Config
   const isLargeField = (name: string) =>
     ['image_path', 'prompt', 'description', 'created_at', 'modified_at'].includes(name);
 
-  const FieldRow = ({ col, value }: { col: any, value: any }) => (
-    <div className="field-row">
-      <b style={{ color: 'var(--accent-secondary)', minWidth: '120px' }}>{col.label}:</b>
-      <Button
-        icon="clipboard"
-        minimal
-        small
-        className="copy-btn"
-        onClick={(e) => { e.stopPropagation(); copyToClipboard(formatValue(col, value)); }}
-      />
-      <span className="field-value">{formatValue(col, value)}</span>
-    </div>
-  );
+  const isPathColumn = (col: { type: string }) => col.type === 'path';
+
+  const FieldRow = ({ col, value }: { col: any, value: any }) => {
+    const isPath = isPathColumn(col);
+    return (
+      <div className="field-row">
+        <b style={{ color: 'var(--accent-secondary)', minWidth: '120px' }}>{col.label}:</b>
+        <Tooltip content={`Copy ${col.label}`}>
+          <Button
+            icon="clipboard"
+            minimal
+            small
+            className="copy-btn"
+            onClick={(e) => { e.stopPropagation(); copyToClipboard(formatValue(col, value)); }}
+          />
+        </Tooltip>
+        <span className={`field-value ${isPath ? 'path-value' : ''}`} style={{ flex: 1 }}>{formatValue(col, value)}</span>
+        {isPath && (
+          <Tooltip content={`Download ${col.label}`}>
+            <Button
+              icon="download"
+              minimal
+              small
+              style={{ color: 'var(--accent-secondary)', marginLeft: '0.5rem' }}
+              onClick={(e) => {
+                e.stopPropagation();
+                window.open(getFileDownloadUrl(row.index, col.name, parquetName), '_blank');
+              }}
+            />
+          </Tooltip>
+        )}
+      </div>
+    );
+  };
 
   return (
     <>
@@ -74,8 +95,12 @@ export function RowCard({ row, schema, parquetName }: { row: Row; schema: Config
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
               <H5 style={{ color: 'var(--accent-primary)', margin: 0, textAlign: 'left' }}>Row #{row.index}</H5>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <Button icon="maximize" minimal small onClick={(e) => { e.stopPropagation(); setIsOpen(true); }} />
-                <Button icon="download" minimal small onClick={(e) => { e.stopPropagation(); window.open(getDownloadUrl(row.index, parquetName)); }} />
+                <Tooltip content="Expand details">
+                  <Button icon="maximize" minimal small onClick={(e) => { e.stopPropagation(); setIsOpen(true); }} />
+                </Tooltip>
+                <Tooltip content="Download row as JSON">
+                  <Button icon="download" minimal small onClick={(e) => { e.stopPropagation(); window.open(getDownloadUrl(row.index, parquetName)); }} />
+                </Tooltip>
               </div>
             </div>
 
@@ -84,15 +109,21 @@ export function RowCard({ row, schema, parquetName }: { row: Row; schema: Config
                 <>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', backgroundColor: 'var(--bg-secondary)', padding: '2px 8px', borderRadius: '4px' }}>
                     <Tag minimal intent="primary">{row.image_meta.width}x{row.image_meta.height}</Tag>
-                    <Button icon="clipboard" minimal small className="copy-btn" onClick={(e) => { e.stopPropagation(); copyToClipboard(`${row.image_meta?.width}x${row.image_meta?.height}`); }} />
+                    <Tooltip content="Copy dimensions">
+                      <Button icon="clipboard" minimal small className="copy-btn" onClick={(e) => { e.stopPropagation(); copyToClipboard(`${row.image_meta?.width}x${row.image_meta?.height}`); }} />
+                    </Tooltip>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', backgroundColor: 'var(--bg-secondary)', padding: '2px 8px', borderRadius: '4px' }}>
                     <Tag minimal intent="warning">{row.image_meta.aspect}</Tag>
-                    <Button icon="clipboard" minimal small className="copy-btn" onClick={(e) => { e.stopPropagation(); copyToClipboard(row.image_meta?.aspect || ''); }} />
+                    <Tooltip content="Copy aspect ratio">
+                      <Button icon="clipboard" minimal small className="copy-btn" onClick={(e) => { e.stopPropagation(); copyToClipboard(row.image_meta?.aspect || ''); }} />
+                    </Tooltip>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', backgroundColor: 'var(--bg-secondary)', padding: '2px 8px', borderRadius: '4px' }}>
                     <Tag minimal intent="success">{row.image_meta.file_size_kb.toFixed(1)} KB</Tag>
-                    <Button icon="clipboard" minimal small className="copy-btn" onClick={(e) => { e.stopPropagation(); copyToClipboard(row.image_meta?.file_size_kb.toFixed(1) + " KB"); }} />
+                    <Tooltip content="Copy file size">
+                      <Button icon="clipboard" minimal small className="copy-btn" onClick={(e) => { e.stopPropagation(); copyToClipboard(row.image_meta?.file_size_kb.toFixed(1) + " KB"); }} />
+                    </Tooltip>
                   </div>
                 </>
               )}
@@ -132,15 +163,21 @@ export function RowCard({ row, schema, parquetName }: { row: Row; schema: Config
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', backgroundColor: 'var(--bg-secondary)', padding: '1rem', borderRadius: '4px' }}>
                   <div className="field-row">
                     <b style={{ minWidth: '100px' }}>Dimensions:</b> {row.image_meta.width} x {row.image_meta.height} px
-                    <Button icon="clipboard" minimal small className="copy-btn" onClick={() => copyToClipboard(`${row.image_meta?.width}x${row.image_meta?.height}`)} />
+                    <Tooltip content="Copy dimensions">
+                      <Button icon="clipboard" minimal small className="copy-btn" onClick={() => copyToClipboard(`${row.image_meta?.width}x${row.image_meta?.height}`)} />
+                    </Tooltip>
                   </div>
                   <div className="field-row">
                     <b style={{ minWidth: '100px' }}>Aspect:</b> {row.image_meta.aspect}
-                    <Button icon="clipboard" minimal small className="copy-btn" onClick={() => copyToClipboard(row.image_meta?.aspect || '')} />
+                    <Tooltip content="Copy aspect ratio">
+                      <Button icon="clipboard" minimal small className="copy-btn" onClick={() => copyToClipboard(row.image_meta?.aspect || '')} />
+                    </Tooltip>
                   </div>
                   <div className="field-row">
                     <b style={{ minWidth: '100px' }}>Size:</b> {row.image_meta.file_size_kb.toFixed(1)} KB
-                    <Button icon="clipboard" minimal small className="copy-btn" onClick={() => copyToClipboard(row.image_meta?.file_size_kb.toFixed(1) + " KB")} />
+                    <Tooltip content="Copy file size">
+                      <Button icon="clipboard" minimal small className="copy-btn" onClick={() => copyToClipboard(row.image_meta?.file_size_kb.toFixed(1) + " KB")} />
+                    </Tooltip>
                   </div>
                 </div>
               ) : (
@@ -158,30 +195,49 @@ export function RowCard({ row, schema, parquetName }: { row: Row; schema: Config
                 )}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                {schema.columns.map(col => (
-                  <div key={col.name} style={{ marginBottom: '0.75rem' }}>
-                    <div style={{ color: 'var(--accent-secondary)', fontWeight: 'bold', fontSize: isLargeField(col.name) ? '1rem' : '0.85rem', marginBottom: '0.2rem', textAlign: 'left' }}>{col.label}</div>
-                    {isEditing && col.editable ? (
-                      <InputGroup
-                        value={editedValues[col.name] ?? ''}
-                        onChange={(e) => setEditedValues({ ...editedValues, [col.name]: e.target.value })}
-                        intent={Intent.PRIMARY}
-                      />
-                    ) : (
-                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', backgroundColor: 'var(--bg-secondary)', padding: '0.5rem', borderRadius: '4px' }}>
-                        <div style={{ color: 'var(--text-secondary)', wordBreak: 'break-all', flex: 1, textAlign: 'left', fontFamily: 'var(--font-serif)', fontSize: isLargeField(col.name) ? '1rem' : undefined }}>
-                          {formatValue(col, row.columns[col.name])}
-                        </div>
-                        <Button
-                          icon="clipboard"
-                          minimal
-                          small
-                          onClick={() => copyToClipboard(formatValue(col, row.columns[col.name]))}
+                {schema.columns.map(col => {
+                  const isPath = isPathColumn(col);
+                  return (
+                    <div key={col.name} style={{ marginBottom: '0.75rem' }}>
+                      <div style={{ color: 'var(--accent-secondary)', fontWeight: 'bold', fontSize: isLargeField(col.name) ? '1rem' : '0.85rem', marginBottom: '0.2rem', textAlign: 'left' }}>{col.label}</div>
+                      {isEditing && col.editable ? (
+                        <InputGroup
+                          value={editedValues[col.name] ?? ''}
+                          onChange={(e) => setEditedValues({ ...editedValues, [col.name]: e.target.value })}
+                          intent={Intent.PRIMARY}
                         />
-                      </div>
-                    )}
-                  </div>
-                ))}
+                      ) : (
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', backgroundColor: 'var(--bg-secondary)', padding: '0.5rem', borderRadius: '4px' }}>
+                          <div style={{ color: 'var(--text-secondary)', wordBreak: 'break-all', flex: 1, textAlign: 'left', fontFamily: isPath ? 'var(--font-sans)' : 'var(--font-serif)', fontSize: isLargeField(col.name) ? '1rem' : undefined }}>
+                            {formatValue(col, row.columns[col.name])}
+                          </div>
+                          <Tooltip content={`Copy ${col.label}`}>
+                            <Button
+                              icon="clipboard"
+                              minimal
+                              small
+                              onClick={() => copyToClipboard(formatValue(col, row.columns[col.name]))}
+                            />
+                          </Tooltip>
+                          {isPath && (
+                            <Tooltip content={`Download ${col.label}`}>
+                              <Button
+                                icon="download"
+                                minimal
+                                small
+                                style={{ color: 'var(--accent-secondary)' }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  window.open(getFileDownloadUrl(row.index, col.name, parquetName), '_blank');
+                                }}
+                              />
+                            </Tooltip>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
