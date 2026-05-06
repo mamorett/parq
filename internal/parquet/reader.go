@@ -29,17 +29,16 @@ func ReadAll(path string) ([]map[string]any, error) {
 	var allRows []map[string]any
 	for {
 		row := make(map[string]any)
-		rows, err := reader.Read([]map[string]any{row})
+		n, err := reader.Read([]map[string]any{row})
+		if n > 0 {
+			allRows = append(allRows, row)
+		}
 		if err != nil {
 			if err == io.EOF {
 				break
 			}
 			return nil, err
 		}
-		if rows == 0 {
-			break
-		}
-		allRows = append(allRows, row)
 	}
 
 	return allRows, nil

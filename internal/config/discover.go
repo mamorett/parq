@@ -67,16 +67,15 @@ func Discover(parquetPath string) (*Config, error) {
 	for i := 0; i < sampleSize; i++ {
 		row := make(map[string]any)
 		n, err := reader.Read([]map[string]any{row})
+		if n > 0 {
+			samples = append(samples, row)
+		}
 		if err != nil {
 			if err == io.EOF {
 				break
 			}
 			return nil, err
 		}
-		if n == 0 {
-			break
-		}
-		samples = append(samples, row)
 	}
 
 	for _, field := range schema.Fields() {
