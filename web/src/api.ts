@@ -63,6 +63,15 @@ export async function updateRow(index: number, columns: Record<string, any>, par
   if (!res.ok) throw new Error('Failed to update row');
 }
 
+export async function deleteRow(index: number, parquetName?: string): Promise<void> {
+  const url = new URL(`${API_BASE}/rows/${index}`, window.location.origin);
+  if (parquetName) url.searchParams.set('parquet', parquetName);
+  const res = await fetch(url.toString(), {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error('Failed to delete row');
+}
+
 export async function fetchSubdirs(column: string, parquetName?: string): Promise<string[]> {
   const url = new URL(`${API_BASE}/subdirs`, window.location.origin);
   url.searchParams.set('col', column);

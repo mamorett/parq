@@ -1,10 +1,15 @@
 import { useEffect, useState } from 'react';
-import { Navbar, NavbarGroup, Alignment, Button, Classes, NonIdealState, Spinner, MenuItem } from '@blueprintjs/core';
+import { Navbar, NavbarGroup, Alignment, Button, Classes, NonIdealState, Spinner, MenuItem, OverlayToaster, type Toaster } from '@blueprintjs/core';
 import { Select } from '@blueprintjs/select';
 import { useSchema, useParquets } from './hooks/useSchema';
 import { useUrlState } from './hooks/useUrlState';
 import { Layout } from './components/Layout';
 import { StatsDrawer } from './components/StatsDrawer';
+
+let toasterRef: Toaster | null = null;
+export function showToaster(toast: Parameters<Toaster['show']>[0]) {
+  toasterRef?.show(toast);
+}
 
 function App() {
   const { data: parquets, isLoading: loadingParquets } = useParquets();
@@ -88,6 +93,7 @@ function App() {
       </Navbar>
       <Layout schema={schema!} parquetName={activeParquet} />
       <StatsDrawer isOpen={state.showStats} onClose={() => updateState({ showStats: false })} parquetName={activeParquet} />
+      <OverlayToaster ref={(ref) => { toasterRef = ref; }} position="top-right" />
     </div>
   );
 }

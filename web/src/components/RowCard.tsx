@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { Card, Elevation, H5, Text, Tag, Button, Dialog, Classes, InputGroup, Intent, Tooltip } from '@blueprintjs/core';
+import { Card, Elevation, H5, Text, Tag, Button, Dialog, Classes, InputGroup, Intent, Tooltip, Alert } from '@blueprintjs/core';
 import type { Row, Config } from '../types';
 import { Thumbnail } from './Thumbnail';
 import { getDownloadUrl, getFileUrl, getFileDownloadUrl } from '../api';
 import { formatDate, detectMarkdown } from '../utils';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { useUpdateRow } from '../hooks/useUpdateRow';
+import { useDeleteRow } from '../hooks/useDeleteRow';
+import { showToaster } from '../App';
 
 export function RowCard({ row, schema, parquetName }: { row: Row; schema: Config; parquetName?: string }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -13,6 +15,8 @@ export function RowCard({ row, schema, parquetName }: { row: Row; schema: Config
   const [editedValues, setEditedValues] = useState<Record<string, any>>({});
   const [markdownFields, setMarkdownFields] = useState<Record<string, boolean>>({});
   const updateRowMutation = useUpdateRow(parquetName);
+  const deleteRowMutation = useDeleteRow(parquetName);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const thumbnailCol = schema.thumbnail.column;
 
   const copyToClipboard = (text: string) => {
@@ -49,7 +53,27 @@ export function RowCard({ row, schema, parquetName }: { row: Row; schema: Config
     updateRowMutation.mutate(
       { index: row.index, columns: editedValues },
       {
-        onSuccess: () => setIsEditing(false),
+        onSuccess: () => {
+          setIsEditing(false);
+          showToaster({ message: `Row #${row.index} updated`, intent: Intent.SUCCESS, icon: 'saved' });
+        },
+      }
+    );
+  };
+
+  const handleDeleteConfirm = () => {
+    deleteRowMutation.mutate(
+      { index: row.index },
+      {
+        onSuccess: () => {
+          setIsDeleteConfirmOpen(false);
+          setIsOpen(false);
+          showToaster({ message: `Row #${row.index} deleted`, intent: Intent.DANGER, icon: 'trash' });
+        },
+        onError: () => {
+          setIsDeleteConfirmOpen(false);
+          showToaster({ message: `Failed to delete Row #${row.index}`, intent: Intent.DANGER, icon: 'error' });
+        },
       }
     );
   };
@@ -201,11 +225,16 @@ export function RowCard({ row, schema, parquetName }: { row: Row; schema: Config
             <div style={{ overflow: 'auto' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
                 <H5 style={{ color: 'var(--accent-primary)', margin: 0, textAlign: 'left' }}>Metadata</H5>
-                {!isEditing ? (
-                  <Button icon="edit" minimal small onClick={handleEditClick}>Edit</Button>
-                ) : (
-                  <Button icon="cross" minimal small onClick={() => setIsEditing(false)}>Cancel</Button>
-                )}
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  {!isEditing ? (
+                    <>
+                      <Button icon="edit" minimal small onClick={handleEditClick}>Edit</Button>
+                      <Button icon="trash" minimal small intent={Intent.DANGER} onClick={() => setIsDeleteConfirmOpen(true)}>Delete</Button>
+                    </>
+                  ) : (
+                    <Button icon="cross" minimal small onClick={() => setIsEditing(false)}>Cancel</Button>
+                  )}
+                </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                 {schema.columns.map(col => {
@@ -288,6 +317,20 @@ export function RowCard({ row, schema, parquetName }: { row: Row; schema: Config
           </div>
         </div>
       </Dialog>
+
+      <Alert
+        isOpen={isDeleteConfirmOpen}
+        cancelButtonText="Cancel"
+        confirmButtonText="Delete"
+        icon="trash"
+        intent={Intent.DANGER}
+        onCancel={() => setIsDeleteConfirmOpen(false)}
+        onConfirm={handleDeleteConfirm}
+        loading={deleteRowMutation.isPending}
+      >
+        <p>Are you sure you want to delete <strong>Row #{row.index}</strong>?</p>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>This action cannot be undone.</p>
+      </Alert>
     </>
   );
 }

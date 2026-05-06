@@ -43,6 +43,7 @@ func NewRouter(ms *store.MultiStore, mc *config.MultiConfig, staticDir, corsOrig
 	mux.HandleFunc("GET /api/rows", srv.handleGetRows)
 	mux.HandleFunc("GET /api/rows/{idx}", srv.handleGetRow)
 	mux.HandleFunc("PUT /api/rows/{idx}", srv.handleUpdateRow)
+	mux.HandleFunc("DELETE /api/rows/{idx}", srv.handleDeleteRow)
 	mux.HandleFunc("GET /api/subdirs", srv.handleGetSubdirs)
 	mux.HandleFunc("GET /api/thumbnail", srv.handleGetThumbnail)
 	mux.HandleFunc("GET /api/file", srv.handleGetFile)

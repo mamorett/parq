@@ -7,7 +7,7 @@ import { NonIdealState, Spinner } from '@blueprintjs/core';
 
 export function RowList({ schema, parquetName }: { schema: Config; parquetName?: string }) {
   const { state } = useUrlState();
-  const { data, isLoading, error } = useRows({ ...state, parquet: parquetName || undefined });
+  const { data, isLoading, isRefetching, error } = useRows({ ...state, parquet: parquetName || undefined });
 
   if (isLoading) {
     return <div style={{ padding: '2rem', textAlign: 'center' }}><Spinner /></div>;
@@ -23,6 +23,13 @@ export function RowList({ schema, parquetName }: { schema: Config; parquetName?:
 
   return (
     <div>
+      {isRefetching && (
+        <div style={{
+          height: '3px', backgroundColor: 'var(--accent-primary)',
+          marginBottom: '0.5rem',
+          animation: 'refetch-pulse 0.8s ease-in-out infinite',
+        }} />
+      )}
       <PaginationBar total={data.total} />
       <div className="row-card-list" style={{ margin: '1rem 0' }}>
         {data.rows.map(row => (

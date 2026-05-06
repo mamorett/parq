@@ -174,6 +174,25 @@ h6,
   background-color: rgba(0, 0, 0, 0.05) !important;
 }
 
+.bp6-button.bp6-intent-danger {
+  color: var(--status-error) !important;
+  border-color: var(--status-error) !important;
+}
+
+.bp6-button.bp6-intent-danger:hover {
+  background-color: rgba(213, 73, 48, 0.1) !important;
+}
+
+.bp6-button.bp6-minimal.bp6-intent-danger {
+  color: var(--status-error) !important;
+  border-color: transparent !important;
+}
+
+.bp6-button.bp6-minimal.bp6-intent-danger:hover {
+  background-color: rgba(213, 73, 48, 0.1) !important;
+  color: var(--status-error) !important;
+}
+
 /* Sidebar dropdown buttons - match Page Size button style */
 .sidebar .bp6-button.bp6-minimal {
   background-color: var(--bg-secondary) !important;
@@ -314,4 +333,48 @@ h5[style*="color: var(--accent-primary)"] {
 }
 .markdown-field-content > *:last-child {
   margin-bottom: 0;
+}
+
+/* Alert (confirmation) dialog overrides */
+.bp6-alert {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+.bp6-alert .bp6-alert-contents {
+  color: var(--text-primary) !important;
+}
+
+.bp6-alert .bp6-button.bp6-intent-danger {
+  background-color: var(--status-error) !important;
+  color: #fff !important;
+  border-color: var(--status-error) !important;
+}
+
+.bp6-alert .bp6-button.bp6-intent-danger:hover {
+  background-color: #b83d28 !important;
+  border-color: #b83d28 !important;
+}
+
+/* Refetch progress bar pulse */
+@keyframes refetch-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+/* Toast overrides */
+.bp6-toast {
+  border-radius: 0 !important;
+  font-family: var(--font-mono) !important;
+  font-size: 0.8rem !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.bp6-toast.bp6-intent-danger {
+  background-color: var(--status-error) !important;
+}
+
+.bp6-toast.bp6-intent-success {
+  background-color: var(--status-success) !important;
 }

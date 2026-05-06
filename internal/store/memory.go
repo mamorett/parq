@@ -17,12 +17,15 @@ import (
 )
 
 type MemoryStore struct {
-	mu        sync.RWMutex
-	cfg       *config.Config
-	data      []map[string]any
-	stats     stats.Stats
-	rewriters map[string]*pathrewrite.Rewriter
-	metaCache map[int]*image.ImageMeta
+	mu         sync.RWMutex
+	cfg        *config.Config
+	data       []map[string]any
+	rowIDs     []int
+	stats      stats.Stats
+	rewriters  map[string]*pathrewrite.Rewriter
+	metaCache  map[int]*image.ImageMeta
+	schema     *libparquet.Schema
+	skipReload bool
 }
 
 func NewMemoryStore(cfg *config.Config) (*MemoryStore, error) {
@@ -56,20 +59,45 @@ func (s *MemoryStore) Reload() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	if s.skipReload {
+		slog.Info("Skipping watcher reload (self-write)", "file", s.cfg.ParquetFile)
+		s.skipReload = false
+		return nil
+	}
+
 	data, err := parquet.ReadAll(s.cfg.ParquetFile)
 	if err != nil {
 		return err
 	}
+	slog.Info("Reloaded parquet data", "file", s.cfg.ParquetFile, "rows", len(data))
 	s.data = data
+
+	s.rowIDs = make([]int, len(data))
+	for i := range s.rowIDs {
+		s.rowIDs[i] = i
+	}
 	s.metaCache = make(map[int]*image.ImageMeta)
 
-	info, err := os.Stat(s.cfg.ParquetFile)
+	f, err := os.Open(s.cfg.ParquetFile)
+	if err != nil {
+		return fmt.Errorf("open parquet for schema: %w", err)
+	}
+	info, _ := f.Stat()
+	pf, err := libparquet.OpenFile(f, info.Size())
+	if err != nil {
+		f.Close()
+		return fmt.Errorf("read parquet schema: %w", err)
+	}
+	s.schema = pf.Schema()
+	f.Close()
+
+	fileInfo, err := os.Stat(s.cfg.ParquetFile)
 	if err != nil {
 		return err
 	}
 
 	s.stats = stats.Compute(data, s.cfg)
-	s.stats.FileSize = info.Size()
+	s.stats.FileSize = fileInfo.Size()
 
 	return nil
 }
@@ -81,8 +109,9 @@ func (s *MemoryStore) Query(f Filter, sortOpt Sort, p Pagination) ([]Row, int, e
 	filtered := make([]Row, 0)
 	for i, r := range s.data {
 		if s.matches(r, f) {
-			row := Row{Index: i, Columns: r}
-			if meta, ok := s.metaCache[i]; ok {
+			rowID := s.rowIDs[i]
+			row := Row{Index: rowID, Columns: r}
+			if meta, ok := s.metaCache[rowID]; ok {
 				row.ImageMeta = meta
 			}
 			filtered = append(filtered, row)
@@ -152,47 +181,90 @@ func (s *MemoryStore) Query(f Filter, sortOpt Sort, p Pagination) ([]Row, int, e
 	return result, total, nil
 }
 
-func (s *MemoryStore) Get(idx int) (Row, error) {
+func (s *MemoryStore) findRowIdx(rowID int) (int, error) {
+	for i, id := range s.rowIDs {
+		if id == rowID {
+			return i, nil
+		}
+	}
+	return -1, fmt.Errorf("row %d not found", rowID)
+}
+
+func (s *MemoryStore) Get(rowID int) (Row, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	if idx < 0 || idx >= len(s.data) {
-		return Row{}, fmt.Errorf("index out of bounds")
+	idx, err := s.findRowIdx(rowID)
+	if err != nil {
+		return Row{}, err
 	}
-	row := Row{Index: idx, Columns: s.data[idx]}
-	if meta, ok := s.metaCache[idx]; ok {
+	row := Row{Index: rowID, Columns: s.data[idx]}
+	if meta, ok := s.metaCache[rowID]; ok {
 		row.ImageMeta = meta
 	}
 	return row, nil
 }
 
-func (s *MemoryStore) Update(idx int, cols map[string]any) error {
+func (s *MemoryStore) Update(rowID int, cols map[string]any) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if idx < 0 || idx >= len(s.data) {
-		return fmt.Errorf("index out of bounds")
+	idx, err := s.findRowIdx(rowID)
+	if err != nil {
+		return err
 	}
 
 	for k, v := range cols {
 		s.data[idx][k] = v
 	}
 
-	// Persist back to parquet
-	f, err := os.Open(s.cfg.ParquetFile)
-	if err != nil {
-		return err
+	if s.schema == nil {
+		slog.Error("Cannot persist: parquet schema not loaded")
+		return fmt.Errorf("parquet schema not loaded")
 	}
-	info, _ := f.Stat()
-	pf, err := libparquet.OpenFile(f, info.Size())
-	if err != nil {
-		f.Close()
-		return err
-	}
-	schema := pf.Schema()
-	f.Close()
 
-	return parquet.WriteAll(s.cfg.ParquetFile, s.data, schema)
+	slog.Info("Persisting update to parquet", "file", s.cfg.ParquetFile, "rowID", rowID, "totalRows", len(s.data))
+	if err := parquet.WriteAll(s.cfg.ParquetFile, s.data, s.schema); err != nil {
+		slog.Error("Failed to persist parquet", "error", err)
+		return fmt.Errorf("persist parquet: %w", err)
+	}
+	s.skipReload = true
+	slog.Info("Parquet persisted successfully")
+	return nil
+}
+
+func (s *MemoryStore) Delete(rowID int) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	idx, err := s.findRowIdx(rowID)
+	if err != nil {
+		return err
+	}
+
+	s.data = append(s.data[:idx], s.data[idx+1:]...)
+	s.rowIDs = append(s.rowIDs[:idx], s.rowIDs[idx+1:]...)
+	delete(s.metaCache, rowID)
+
+	s.stats = stats.Compute(s.data, s.cfg)
+	fileInfo, err := os.Stat(s.cfg.ParquetFile)
+	if err == nil {
+		s.stats.FileSize = fileInfo.Size()
+	}
+
+	if s.schema == nil {
+		slog.Error("Cannot persist: parquet schema not loaded")
+		return fmt.Errorf("parquet schema not loaded")
+	}
+
+	slog.Info("Persisting delete to parquet", "file", s.cfg.ParquetFile, "rowID", rowID, "totalRows", len(s.data))
+	if err := parquet.WriteAll(s.cfg.ParquetFile, s.data, s.schema); err != nil {
+		slog.Error("Failed to persist parquet after delete", "error", err)
+		return fmt.Errorf("persist parquet: %w", err)
+	}
+	s.skipReload = true
+	slog.Info("Parquet persisted successfully after delete")
+	return nil
 }
 
 func (s *MemoryStore) Stats() (stats.Stats, error) {

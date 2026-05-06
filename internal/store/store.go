@@ -34,6 +34,7 @@ type RowStore interface {
 	Query(f Filter, s Sort, p Pagination) ([]Row, int, error)
 	Get(idx int) (Row, error)
 	Update(idx int, cols map[string]any) error
+	Delete(idx int) error
 	Stats() (stats.Stats, error)
 	Subdirs(col string) ([]string, error)
 	Close() error
