@@ -1,6 +1,6 @@
 export function formatDate(value: any): string {
   if (value === null || value === undefined) return '';
-  
+
   // If it's a number or bigint, assume it's a timestamp
   if (typeof value === 'number' || typeof value === 'bigint') {
     const num = Number(value);
@@ -30,4 +30,22 @@ export function formatDate(value: any): string {
   }
 
   return String(value);
+}
+
+export function detectMarkdown(text: string): boolean {
+  if (!text || text.length < 4) return false;
+  const patterns = [
+    /^#{1,6}\s/m,           // headings
+    /\*\*[^*]+\*\*/,        // bold **
+    /\*[^*\s][^*]*\*/,      // italic *
+    /__[^_]+__/,            // bold __
+    /_[^_\s][^_]*_/,        // italic _
+    /`[^`]+`/,              // inline code
+    /^```/m,                // code block
+    /\[[^\]]+\]\(https?:/,  // links
+    /^[-*]\s/m,             // unordered list
+    /^\d+\.\s/m,            // ordered list
+    /^>/m,                  // blockquote
+  ];
+  return patterns.some(p => p.test(text));
 }

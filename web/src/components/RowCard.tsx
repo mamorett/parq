@@ -3,19 +3,24 @@ import { Card, Elevation, H5, Text, Tag, Button, Dialog, Classes, InputGroup, In
 import type { Row, Config } from '../types';
 import { Thumbnail } from './Thumbnail';
 import { getDownloadUrl, getFileUrl, getFileDownloadUrl } from '../api';
-import { formatDate } from '../utils';
+import { formatDate, detectMarkdown } from '../utils';
+import { MarkdownRenderer } from './MarkdownRenderer';
 import { useUpdateRow } from '../hooks/useUpdateRow';
 
 export function RowCard({ row, schema, parquetName }: { row: Row; schema: Config; parquetName?: string }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedValues, setEditedValues] = useState<Record<string, any>>({});
+  const [markdownFields, setMarkdownFields] = useState<Record<string, boolean>>({});
   const updateRowMutation = useUpdateRow(parquetName);
   const thumbnailCol = schema.thumbnail.column;
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
   };
+
+  const toggleMarkdown = (colName: string) =>
+    setMarkdownFields(prev => ({ ...prev, [colName]: !prev[colName] }));
 
   const formatValue = (col: any, val: any) => {
     if (val === null || val === undefined) return '';
@@ -197,6 +202,9 @@ export function RowCard({ row, schema, parquetName }: { row: Row; schema: Config
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                 {schema.columns.map(col => {
                   const isPath = isPathColumn(col);
+                  const rawVal = formatValue(col, row.columns[col.name]);
+                  const hasMarkdown = !isPath && detectMarkdown(rawVal);
+                  const useMarkdown = !isPath && markdownFields[col.name];
                   return (
                     <div key={col.name} style={{ marginBottom: '0.75rem' }}>
                       <div style={{ color: 'var(--accent-secondary)', fontWeight: 'bold', fontSize: isLargeField(col.name) ? '1rem' : '0.85rem', marginBottom: '0.2rem', textAlign: 'left' }}>{col.label}</div>
@@ -208,17 +216,32 @@ export function RowCard({ row, schema, parquetName }: { row: Row; schema: Config
                         />
                       ) : (
                         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', backgroundColor: 'var(--bg-secondary)', padding: '0.5rem', borderRadius: '4px' }}>
-                          <div style={{ color: 'var(--text-secondary)', wordBreak: 'break-all', flex: 1, textAlign: 'left', fontFamily: isPath ? 'var(--font-sans)' : 'var(--font-serif)', fontSize: isLargeField(col.name) ? '1rem' : undefined }}>
-                            {formatValue(col, row.columns[col.name])}
+                          <div className="markdown-field-content" style={{ color: 'var(--text-secondary)', wordBreak: 'break-all', flex: 1, textAlign: 'left', fontFamily: isPath ? 'var(--font-sans)' : 'var(--font-serif)', fontSize: isLargeField(col.name) ? '1rem' : undefined }}>
+                            {useMarkdown ? (
+                              <MarkdownRenderer content={rawVal} fontSize={isLargeField(col.name) ? '1rem' : undefined} />
+                            ) : (
+                              rawVal
+                            )}
                           </div>
                           <Tooltip content={`Copy ${col.label}`}>
                             <Button
                               icon="clipboard"
                               minimal
                               small
-                              onClick={() => copyToClipboard(formatValue(col, row.columns[col.name]))}
+                              onClick={() => copyToClipboard(rawVal)}
                             />
                           </Tooltip>
+                          {hasMarkdown && (
+                            <Tooltip content="Toggle markdown rendering">
+                              <Button
+                                icon="code"
+                                minimal
+                                small
+                                intent={useMarkdown ? Intent.PRIMARY : Intent.NONE}
+                                onClick={() => toggleMarkdown(col.name)}
+                              />
+                            </Tooltip>
+                          )}
                           {isPath && (
                             <Tooltip content={`Download ${col.label}`}>
                               <Button

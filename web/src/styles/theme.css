@@ -307,3 +307,11 @@ h5[style*="color: var(--accent-primary)"] {
 .bp6-popover .bp6-divider {
   background-color: var(--border-color) !important;
 }
+
+/* Markdown field content margin reset */
+.markdown-field-content > * {
+  margin-top: 0;
+}
+.markdown-field-content > *:last-child {
+  margin-bottom: 0;
+}
