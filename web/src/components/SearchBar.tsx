@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { TextArea, Button, MenuItem } from '@blueprintjs/core';
+import { TextArea, Button, MenuItem, Tooltip } from '@blueprintjs/core';
 import { Select } from '@blueprintjs/select';
 import type { Config } from '../types';
 import { useUrlState } from '../hooks/useUrlState';
@@ -47,14 +47,28 @@ export function SearchBar({ schema }: { schema: Config }) {
         <Button minimal small text={columns.find(c => c.name === currentCol)?.label || 'All Columns'} icon="column-layout" />
       </Select>
       <div style={{ position: 'relative' }}>
-        <TextArea
-          placeholder="Search (use AND, OR, - for NOT, ( ) for grouping)…&#10;Examples: cat dog (AND), cat OR dog, cat -dog"
-          value={localSearch}
-          onChange={(e) => setLocalSearch(e.target.value)}
-          rows={4}
-          fill
-          style={{ fontFamily: 'var(--font-mono)', fontSize: '0.9rem', paddingRight: '36px' }}
-        />
+        <Tooltip
+          content={
+            <div style={{ maxWidth: '300px' }}>
+              <div><strong>Operators:</strong></div>
+              <div><code>word1 word2</code> — AND (both match)</div>
+              <div><code>word1 OR word2</code> — OR (either matches)</div>
+              <div><code>word -exclude</code> — NOT (exclude term)</div>
+              <div><code>(group)</code> — Parentheses for grouping</div>
+              <div style={{ marginTop: '0.5rem' }}><em>Examples: cat dog, cat OR dog, cat -dog</em></div>
+            </div>
+          }
+          hoverOpenDelay={200}
+        >
+          <TextArea
+            placeholder="Search…"
+            value={localSearch}
+            onChange={(e) => setLocalSearch(e.target.value)}
+            rows={4}
+            fill
+            style={{ fontFamily: 'var(--font-mono)', fontSize: '0.9rem', paddingRight: '36px' }}
+          />
+        </Tooltip>
         {localSearch && (
           <Button
             minimal
