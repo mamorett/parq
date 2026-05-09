@@ -253,9 +253,9 @@ export function RowCard({ row, schema, parquetName }: { row: Row; schema: Config
                         />
                       ) : (
                         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', backgroundColor: 'var(--bg-secondary)', padding: '0.5rem', borderRadius: '4px' }}>
-                          <div className="markdown-field-content" style={{ color: 'var(--text-secondary)', wordBreak: 'break-all', flex: 1, textAlign: 'left', fontFamily: isPath ? 'var(--font-sans)' : 'var(--font-serif)', fontSize: isLargeField(col.name) ? '1rem' : undefined }}>
+                          <div className="markdown-field-content" style={{ color: 'var(--text-secondary)', wordBreak: 'break-all', flex: 1, textAlign: 'left', fontFamily: isPath ? 'var(--font-sans)' : 'var(--font-serif)', fontSize: isLargeField(col.name) ? '1rem' : '0.95rem' }}>
                             {useMarkdown ? (
-                              <MarkdownRenderer content={rawVal} fontSize={isLargeField(col.name) ? '1rem' : undefined} />
+                              <MarkdownRenderer content={rawVal} fontSize={isLargeField(col.name) ? '1rem' : '0.95rem'} />
                             ) : (
                               rawVal
                             )}

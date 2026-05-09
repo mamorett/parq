@@ -314,28 +314,9 @@ func (s *MemoryStore) GetConfig() *config.Config {
 
 func (s *MemoryStore) matches(r map[string]any, f Filter) bool {
 	if f.Search != "" {
-		match := false
-		searchLower := strings.ToLower(f.Search)
-		if f.SearchCol != "" {
-			if val, ok := r[f.SearchCol]; ok {
-				if strings.Contains(strings.ToLower(fmt.Sprintf("%v", val)), searchLower) {
-					match = true
-				}
-			}
-		} else {
-			for _, col := range s.cfg.Columns {
-				if !col.Searchable {
-					continue
-				}
-				if val, ok := r[col.Name]; ok {
-					if strings.Contains(strings.ToLower(fmt.Sprintf("%v", val)), searchLower) {
-						match = true
-						break
-					}
-				}
-			}
-		}
-		if !match {
+		// Parse and evaluate boolean expression
+		tokens := tokenizeSearch(f.Search)
+		if !evaluateExpression(tokens, 0, len(tokens), r, s.cfg.Columns, f.SearchCol) {
 			return false
 		}
 	}
@@ -370,6 +351,164 @@ func (s *MemoryStore) matches(r map[string]any, f Filter) bool {
 	}
 
 	return true
+}
+
+// Token types for search expression
+type tokenType int
+
+const (
+	tokenWord tokenType = iota
+	tokenOR
+	tokenNOT
+	tokenLParen
+	tokenRParen
+)
+
+type token struct {
+	typ   tokenType
+	value string // for words
+}
+
+// tokenizeSearch splits the search query into tokens
+func tokenizeSearch(query string) []token {
+	var tokens []token
+	words := strings.Fields(query)
+
+	for _, word := range words {
+		wordLower := strings.ToUpper(word)
+		switch wordLower {
+		case "OR":
+			tokens = append(tokens, token{typ: tokenOR, value: word})
+		case "(":
+			tokens = append(tokens, token{typ: tokenLParen, value: word})
+		case ")":
+			tokens = append(tokens, token{typ: tokenRParen, value: word})
+		default:
+			// Check for NOT prefix (-)
+			if strings.HasPrefix(word, "-") {
+				tokens = append(tokens, token{typ: tokenNOT, value: word[1:]})
+			} else {
+				tokens = append(tokens, token{typ: tokenWord, value: word})
+			}
+		}
+	}
+
+	return tokens
+}
+
+// evaluateExpression evaluates a boolean expression from tokens[start:end]
+// Returns true if the expression matches the row
+func evaluateExpression(tokens []token, start, end int, row map[string]any, columns []config.ColumnDef, searchCol string) bool {
+	if start >= end {
+		return true
+	}
+
+	// Parse groups separated by OR
+	// Each group is ANDed together, groups are ORed
+	groupStart := start
+	i := start
+
+	for i < end {
+		if tokens[i].typ == tokenOR {
+			// Evaluate current group (AND logic)
+			groupMatch := evaluateGroup(tokens, groupStart, i, row, columns, searchCol)
+			if groupMatch {
+				return true
+			}
+			// Start next group after OR
+			groupStart = i + 1
+		}
+		i++
+	}
+
+	// Evaluate last group
+	return evaluateGroup(tokens, groupStart, end, row, columns, searchCol)
+}
+
+// evaluateGroup evaluates terms within a group (AND logic)
+func evaluateGroup(tokens []token, start, end int, row map[string]any, columns []config.ColumnDef, searchCol string) bool {
+	i := start
+	notActive := false
+
+	for i < end {
+		tok := tokens[i]
+
+		if tok.typ == tokenNOT {
+			notActive = true
+			i++
+			continue
+		}
+
+		if tok.typ == tokenLParen {
+			// Find matching closing paren
+			parenStart := i + 1
+			parenEnd := findMatchingParen(tokens, i)
+			groupMatch := evaluateExpression(tokens, parenStart, parenEnd, row, columns, searchCol)
+			if notActive {
+				groupMatch = !groupMatch
+				notActive = false
+			}
+			if !groupMatch {
+				return false
+			}
+			i = parenEnd + 1
+			continue
+		}
+
+		if tok.typ == tokenWord {
+			match := matchWord(row, columns, searchCol, tok.value)
+			if notActive {
+				match = !match
+				notActive = false
+			}
+			if !match {
+				return false
+			}
+		}
+
+		i++
+	}
+
+	return true
+}
+
+// findMatchingParen finds the index of the closing parenthesis
+func findMatchingParen(tokens []token, start int) int {
+	count := 1
+	i := start + 1
+	for i < len(tokens) && count > 0 {
+		if tokens[i].typ == tokenLParen {
+			count++
+		} else if tokens[i].typ == tokenRParen {
+			count--
+		}
+		i++
+	}
+	return i - 1
+}
+
+// matchWord checks if a word matches the row (case-insensitive substring)
+func matchWord(row map[string]any, columns []config.ColumnDef, searchCol, word string) bool {
+	searchLower := strings.ToLower(word)
+
+	if searchCol != "" {
+		if val, ok := row[searchCol]; ok {
+			return strings.Contains(strings.ToLower(fmt.Sprintf("%v", val)), searchLower)
+		}
+		return false
+	}
+
+	for _, col := range columns {
+		if !col.Searchable {
+			continue
+		}
+		if val, ok := row[col.Name]; ok {
+			if strings.Contains(strings.ToLower(fmt.Sprintf("%v", val)), searchLower) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func compare(a, b any) int {

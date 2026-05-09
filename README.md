@@ -15,10 +15,11 @@
 - **🔍 Smart Autodiscovery**: Point it at any Parquet file and it will automatically guess column types, identify path columns, and detect datetime formats.
 - **📁 Directory Autodiscovery**: Run without a config file and Parq will automatically scan the current directory for all `.parquet` files.
 - **🖼️ Media Probing**: Automatically extracts image dimensions, aspect ratios, and file sizes from path columns.
-- **⚡ Fast Search & Filter**: Substring search across all columns, exact filters, and subdirectory-based path filtering.
+- **⚡ Advanced Boolean Search**: Full-text search with AND (space-separated), OR, NOT (`-` prefix), and parentheses for grouping. Examples: `cat dog` (both), `cat OR dog`, `cat -dog`.
 - **📝 Inline Editing**: Edit string columns directly in the UI and persist changes back to the original Parquet file.
 - **🔗 Path Remapping**: Use regex rules to reconnect file paths inside your Parquet to different mount points at runtime without mutating the data.
-- **🌑 Nord Dark Theme**: A beautiful, eye-friendly interface built with BlueprintJS and the Nord color palette.
+- **🔄 Live Refresh**: Refresh the parquet file list without a full page reload using the Refresh button in the navbar.
+- **🎨 Editorial Theme**: A beautiful, professional interface with serif/sans-serif typography and custom color palette.
 - **📦 Zero-Config Docker**: Run as a single container with minimal setup.
 
 ## 🛠️ Quick Start (Docker)
@@ -98,6 +99,20 @@ Define how each Parquet file should be displayed. If a file has no explicit `col
 | `pagination` | `default_page_size` and `page_size_options` |
 | `thumbnail` | Which column to use for thumbnails, max size, and format (`webp` or `jpeg`) |
 
+## 🔍 Search Syntax
+
+The search bar supports boolean operators for powerful filtering:
+
+| Syntax | Description | Example |
+|--------|-------------|---------|
+| `word1 word2` | AND: both words must match (implicit) | `cat dog` → rows with both "cat" AND "dog" |
+| `word1 OR word2` | OR: either word matches | `cat OR dog` → rows with "cat" OR "dog" |
+| `word -exclusion` | NOT: exclude terms | `cat -dog` → "cat" but NOT "dog" |
+| `(group)` | Parentheses for grouping | `cat OR (dog bird)` |
+| Column selector | Filter search to specific column | Select column from dropdown, then search |
+
+Searches are case-insensitive and match substrings within the selected column or all searchable columns.
+
 ### Column definition reference
 
 | Field | Type | Description |
@@ -146,6 +161,7 @@ parq discover --parquet /data/a.parquet --parquet /data/b.parquet
 - **Backend**: Go REST API. Uses a `MultiStore` holding one in-memory `MemoryStore` per Parquet file. Watches all files via `fsnotify` for hot-reload.
 - **Frontend**: React 18 SPA using BlueprintJS for a dense, professional UI and TanStack Query for efficient data synchronization.
 - **Persistence**: Edits are persisted back to the Parquet file using the `parquet-go` library.
+- **Search Engine**: Custom boolean expression parser supporting AND, OR, NOT, and parentheses for complex queries.
 
 ## 👩‍💻 Development
 
@@ -182,10 +198,17 @@ parq discover --parquet /data/a.parquet --parquet /data/b.parquet
 | `-base-path` | `/` | URL prefix for reverse-proxy |
 | `-static-dir` | `./web/dist` | React build directory |
 | `-cors-origins` | `*` | Allowed CORS origins |
-| `-auto-discover` | `false` | Generate `parqs.json` on startup if missing |
-| `-parquet` | — | Single parquet file path (used with `-auto-discover`) |
-| `-parquet-dir` | — | Directory to scan for all `.parquet` files (autodiscovery) |
+| `-auto-discover` | `false` | Auto-discover parquet files if config missing |
+| `-parquet` | — | Single parquet file path (with `-auto-discover`) |
+| `-parquet-dir` | — | Directory to scan for all `.parquet` files |
+
+### Environment variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT` | `8080` | Alternative to `-addr` |
+| `CONFIG_PATH` | `./parqs.json` | Alternative to `-config` |
 
 ## 📄 License
 
-MIT © [Trithemius](https://github.com/trithemius)
+See [LICENSE](LICENSE) for details.

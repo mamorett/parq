@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Navbar, NavbarGroup, Alignment, Button, Classes, NonIdealState, Spinner, MenuItem, OverlayToaster, type Toaster } from '@blueprintjs/core';
+import { Navbar, NavbarGroup, Alignment, Button, Classes, NonIdealState, Spinner, MenuItem, OverlayToaster, type Toaster, Intent } from '@blueprintjs/core';
 import { Select } from '@blueprintjs/select';
+import { useQueryClient } from '@tanstack/react-query';
 import { useSchema, useParquets } from './hooks/useSchema';
 import { useUrlState } from './hooks/useUrlState';
 import { Layout } from './components/Layout';
@@ -12,10 +13,17 @@ export function showToaster(toast: Parameters<Toaster['show']>[0]) {
 }
 
 function App() {
-  const { data: parquets, isLoading: loadingParquets } = useParquets();
+  const { data: parquets, isLoading: loadingParquets, refetch } = useParquets();
+  const queryClient = useQueryClient();
   const [activeParquet, setActiveParquet] = useState<string>('');
   const { data: schema, isLoading, error } = useSchema(activeParquet || undefined);
   const { state, updateState } = useUrlState();
+
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ['parquets'] });
+    refetch();
+    showToaster({ message: 'Parquet list refreshed', intent: Intent.SUCCESS, icon: 'refresh' });
+  };
 
   // Initialize active parquet from URL or first available
   useEffect(() => {
@@ -89,6 +97,7 @@ function App() {
           )}
           <Button className={Classes.MINIMAL} icon="home" text="Explorer" />
           <Button className={Classes.MINIMAL} icon="info-sign" text="Stats" onClick={() => updateState({ showStats: true })} />
+          <Button className={Classes.MINIMAL} icon="refresh" text="Refresh" onClick={handleRefresh} />
         </NavbarGroup>
       </Navbar>
       <Layout schema={schema!} parquetName={activeParquet} />

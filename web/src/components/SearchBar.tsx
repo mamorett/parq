@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { InputGroup, ControlGroup, MenuItem, Button } from '@blueprintjs/core';
+import { TextArea, Button, MenuItem } from '@blueprintjs/core';
 import { Select } from '@blueprintjs/select';
 import type { Config } from '../types';
 import { useUrlState } from '../hooks/useUrlState';
@@ -34,7 +34,7 @@ export function SearchBar({ schema }: { schema: Config }) {
   };
 
   return (
-    <ControlGroup fill vertical>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
       <Select<SearchColumn>
         items={columns}
         itemRenderer={(item, { handleClick, modifiers }) => {
@@ -46,22 +46,30 @@ export function SearchBar({ schema }: { schema: Config }) {
       >
         <Button minimal small text={columns.find(c => c.name === currentCol)?.label || 'All Columns'} icon="column-layout" />
       </Select>
-      <InputGroup
-        leftIcon="search"
-        placeholder="Search term..."
-        value={localSearch}
-        onChange={(e) => setLocalSearch(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            updateState({ search: localSearch, page: 1 });
-          }
-        }}
-        rightElement={
-          localSearch ? (
-            <Button minimal small icon="cross" onClick={handleClearSearch} style={{ marginRight: '4px' }} />
-          ) : undefined
-        }
-      />
-    </ControlGroup>
+      <div style={{ position: 'relative' }}>
+        <TextArea
+          placeholder="Search (use AND, OR, - for NOT, ( ) for grouping)…&#10;Examples: cat dog (AND), cat OR dog, cat -dog"
+          value={localSearch}
+          onChange={(e) => setLocalSearch(e.target.value)}
+          rows={4}
+          fill
+          style={{ fontFamily: 'var(--font-mono)', fontSize: '0.9rem', paddingRight: '36px' }}
+        />
+        {localSearch && (
+          <Button
+            minimal
+            small
+            icon="cross"
+            onClick={handleClearSearch}
+            style={{
+              position: 'absolute',
+              right: '8px',
+              top: '8px',
+              zIndex: 1,
+            }}
+          />
+        )}
+      </div>
+    </div>
   );
 }

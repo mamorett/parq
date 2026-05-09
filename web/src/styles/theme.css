@@ -113,6 +113,7 @@ h6,
   border-radius: 0 !important;
   box-shadow: 0 10px 30px rgba(35, 31, 28, 0.1) !important;
   color: var(--text-primary) !important;
+  font-size: inherit !important;
 }
 
 .bp6-dialog-header,
